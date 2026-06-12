@@ -5,48 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
     <title>演奏画面 - リズムWebピアノ</title>
     <style>
-        /* スマホの誤操作防止と画面フィット */
         html, body { position: fixed; width: 100%; height: 100%; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
         body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #1a1a1a; color: white; margin: 0; }
         
-        .header-area { margin: 10px; display: flex; gap: 10px; align-items: center; z-index: 10; height: 50px; flex-wrap: wrap; justify-content: center; }
-        .menu-btn { padding: 6px 12px; background: #555; color: white; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 13px; font-weight: bold; }
-        .menu-btn:hover { background: #777; }
+        /* 1. スコア・ゲージエリア（進行状況を上部に可視化） */
+        .header-area { margin: 8px 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; z-index: 10; width: 100%; max-width: 456px; box-sizing: border-box; }
+        .nav-row { display: flex; width: 100%; justify-content: space-between; align-items: center; padding: 0 10px; box-sizing: border-box; }
+        .menu-btn { padding: 6px 12px; background: #555; color: white; border: none; border-radius: 5px; text-decoration: none; font-size: 13px; font-weight: bold; }
         .start-btn { padding: 8px 16px; font-size: 14px; background: #007BFF; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .start-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
-        h2 { font-size: 16px; margin: 0; }
+        
+        .status-row { display: flex; width: 100%; justify-content: space-between; padding: 0 10px; font-size: 14px; font-weight: bold; color: #00d2ff; }
+        .progress-container { width: calc(100% - 20px); height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-top: 2px; }
+        .progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #00d2ff, #0066ff); transition: width 0.1s linear; }
 
-        /* 【重要】スマホ画面に合わせて最大456px、それ以下なら100%幅に可変 */
-        .game-view { position: relative; width: 100%; max-width: 456px; height: calc(100% - 90px); max-height: 550px; background: #222; border: 3px solid #444; border-bottom: none; overflow: hidden; box-sizing: border-box; }
+        /* ゲーム画面（内寸456px、黒鍵追加に伴い高さを少し調整） */
+        .game-view { position: relative; width: 100%; max-width: 456px; height: calc(100% - 120px); max-height: 550px; background: #222; border: 3px solid #444; border-bottom: none; overflow: hidden; box-sizing: border-box; }
 
-        /* レーンを区切る縦のガイド線 */
+        /* レーンを区切る縦のガイド線（白鍵8列に対応） */
         .lane-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; pointer-events: none; z-index: 1; }
-        .line { flex: 1; border-right: 1px dashed rgba(255, 255, 255, 0.15); height: 100%; box-sizing: border-box; }
+        .line { flex: 1; border-right: 1px dashed rgba(255, 255, 255, 0.12); height: 100%; box-sizing: border-box; }
         .line:last-child { border-right: none; }
 
-        /* 【重要】幅を%にすることで、画面が縮んでもレーンと完全に一致 */
+        /* 落ちてくるノーツ（%幅で完全にレーンと同期。黒鍵は半透明か別色にすることも可能ですが、視認性重視で統一） */
         .note-block {
-            position: absolute; width: calc(12.5% - 2px); height: 30px;
+            position: absolute; height: 26px;
             background: linear-gradient(#00d2ff, #0066ff);
             border-radius: 4px; box-shadow: 0 0 8px #00d2ff;
             animation: fall 2.5s linear forwards; z-index: 2;
             display: flex; align-items: center; justify-content: center;
             font-size: 11px; font-weight: bold; color: white; box-sizing: border-box;
         }
+        /* 黒鍵用ノーツの見た目を少し変えて識別しやすく（紫グラデーション） */
+        .note-block.black-note {
+            background: linear-gradient(#ff00d2, #aa00ff);
+            box-shadow: 0 0 8px #ff00d2;
+        }
+
+        /* 3. 判定テキスト＆コンボのエフェクト表示位置 */
+        .judgment-display { position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; font-weight: bold; text-shadow: 0 0 10px black; pointer-events: none; z-index: 5; text-align: center; }
+        .judgment-text.perfect { color: #ffea00; }
+        .judgment-text.great { color: #00ff66; }
+        .judgment-text.miss { color: #ff0055; }
+        .combo-text { font-size: 16px; color: white; margin-top: 2px; }
 
         /* 判定ライン */
-        .judgment-line { position: absolute; bottom: 120px; width: 100%; height: 3px; background: #ff0055; box-shadow: 0 0 10px #ff0055; z-index: 3; }
+        .judgment-line { position: absolute; bottom: 130px; width: 100%; height: 3px; background: #ff0055; box-shadow: 0 0 10px #ff0055; z-index: 3; }
 
-        /* ピアノ鍵盤エリア */
-        .piano-container { display: flex; background: #333; width: 100%; height: 120px; position: absolute; bottom: 0; z-index: 4; box-sizing: border-box; }
+        /* 4. ピアノ鍵盤エリア（黒鍵を上に重ねるため relative） */
+        .piano-container { display: flex; background: #333; width: 100%; height: 130px; position: absolute; bottom: 0; z-index: 4; box-sizing: border-box; }
+        
+        /* 白鍵（8鍵） */
         .white-key {
             flex: 1; height: 100%; background: white; color: #333; border: 1px solid #333; border-top: none; border-radius: 0 0 4px 4px;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-            padding-bottom: 15px; font-weight: bold; box-shadow: inset 0 -5px 0 #ccc; box-sizing: border-box;
-            touch-action: none; /* スマホのスクロール暴発防止 */
+            padding-bottom: 12px; font-weight: bold; box-shadow: inset 0 -5px 0 #ccc; box-sizing: border-box;
+            touch-action: none; z-index: 1;
         }
         .white-key.active { background: #00d2ff; color: white; box-shadow: none; transform: scaleY(0.96); transform-origin: top; }
+        
+        /* 黒鍵（5鍵）：白鍵の隙間に絶対配置で浮かせる */
+        .black-key {
+            position: absolute; width: calc(12.5% * 0.65); height: 60%; background: #111; color: white;
+            border-radius: 0 0 3px 3px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+            padding-bottom: 5px; font-size: 10px; border: 1px solid #000; box-shadow: inset 0 -4px 0 #444; box-sizing: border-box;
+            touch-action: none; z-index: 2;
+        }
+        .black-key.active { background: #ff00d2; color: white; box-shadow: none; transform: scaleY(0.96); transform-origin: top; }
+
+        /* 黒鍵の正確な横位置（白鍵8マスの隙間に配置） */
+        #key-W { left: calc(12.5% * 1 - (12.5% * 0.65) / 2); }
+        #key-E { left: calc(12.5% * 2 - (12.5% * 0.65) / 2); }
+        #key-T { left: calc(12.5% * 4 - (12.5% * 0.65) / 2); }
+        #key-Y { left: calc(12.5% * 5 - (12.5% * 0.65) / 2); }
+        #key-U { left: calc(12.5% * 6 - (12.5% * 0.65) / 2); }
+
         .key-hint { font-size: 9px; color: #888; }
+        .black-key .key-hint { color: #aaa; }
 
         @keyframes fall {
             0% { top: -35px; }
@@ -57,9 +92,18 @@
 <body>
 
     <div class="header-area">
-        <a href="music.html" class="menu-btn">🎵 曲設定を開く</a>
-        <h2 id="song-title">自由演奏（フリーモード）</h2>
-        <button id="start-btn" class="start-btn">演奏スタート！</button>
+        <div class="nav-row">
+            <a href="music.html" class="menu-btn">🎵 演奏曲設定</a>
+            <h2 id="song-title">自由演奏</h2>
+            <button id="start-btn" class="start-btn">スタート</button>
+        </div>
+        <div class="status-row">
+            <div id="score-display">SCORE: 0</div>
+            <div id="combo-display" style="opacity: 0;">0 COMBO</div>
+        </div>
+        <div class="progress-container">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
     </div>
 
     <div class="game-view" id="game-view">
@@ -68,33 +112,50 @@
             <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
         </div>
         
+        <div class="judgment-display" id="judgment-display"></div>
+        
         <div class="judgment-line"></div>
         
         <div class="piano-container">
-            <div class="white-key" id="key-A" data-index="0" data-note="261.63" data-name="ド"><span>ド</span><span class="key-hint">[A]</span></div>
-            <div class="white-key" id="key-S" data-index="1" data-note="293.66" data-name="レ"><span>レ</span><span class="key-hint">[S]</span></div>
-            <div class="white-key" id="key-D" data-index="2" data-note="329.63" data-name="ミ"><span>ミ</span><span class="key-hint">[D]</span></div>
-            <div class="white-key" id="key-F" data-index="3" data-note="349.23" data-name="ファ"><span>ファ</span><span class="key-hint">[F]</span></div>
-            <div class="white-key" id="key-G" data-index="4" data-note="392.00" data-name="ソ"><span>ソ</span><span class="key-hint">[G]</span></div>
-            <div class="white-key" id="key-H" data-index="5" data-note="440.00" data-name="ラ"><span>ラ</span><span class="key-hint">[H]</span></div>
-            <div class="white-key" id="key-J" data-index="6" data-note="493.88" data-name="シ"><span>シ</span><span class="key-hint">[J]</span></div>
-            <div class="white-key" id="key-K" data-index="7" data-note="523.25" data-name="ド↑"><span>ド↑</span><span class="key-hint">[K]</span></div>
+            <div class="white-key" id="key-A" data-is-black="false" data-index="0" data-note="261.63" data-name="ド"><span>ド</span><span class="key-hint">[A]</span></div>
+            <div class="white-key" id="key-S" data-is-black="false" data-index="1" data-note="293.66" data-name="レ"><span>レ</span><span class="key-hint">[S]</span></div>
+            <div class="white-key" id="key-D" data-is-black="false" data-index="2" data-note="329.63" data-name="ミ"><span>ミ</span><span class="key-hint">[D]</span></div>
+            <div class="white-key" id="key-F" data-is-black="false" data-index="3" data-note="349.23" data-name="ファ"><span>ファ</span><span class="key-hint">[F]</span></div>
+            <div class="white-key" id="key-G" data-is-black="false" data-index="4" data-note="392.00" data-name="ソ"><span>ソ</span><span class="key-hint">[G]</span></div>
+            <div class="white-key" id="key-H" data-is-black="false" data-index="5" data-note="440.00" data-name="ラ"><span>ラ</span><span class="key-hint">[H]</span></div>
+            <div class="white-key" id="key-J" data-is-black="false" data-index="6" data-note="493.88" data-name="シ"><span>シ</span><span class="key-hint">[J]</span></div>
+            <div class="white-key" id="key-K" data-is-black="false" data-index="7" data-note="523.25" data-name="ド↑"><span>ド↑</span><span class="key-hint">[K]</span></div>
+
+            <div class="black-key" id="key-W" data-is-black="true" data-index="0.5" data-note="277.18" data-name="ド#"><span>ド#</span><span class="key-hint">[W]</span></div>
+            <div class="black-key" id="key-E" data-is-black="true" data-index="1.5" data-note="311.13" data-name="レ#"><span>レ#</span><span class="key-hint">[E]</span></div>
+            <div class="black-key" id="key-T" data-is-black="true" data-index="3.5" data-note="369.99" data-name="ファ#"><span>ファ#</span><span class="key-hint">[T]</span></div>
+            <div class="black-key" id="key-Y" data-is-black="true" data-index="4.5" data-note="415.30" data-name="ソ#"><span>ソ#</span><span class="key-hint">[Y]</span></div>
+            <div class="black-key" id="key-U" data-is-black="true" data-index="5.5" data-note="466.16" data-name="ラ#"><span>ラ#</span><span class="key-hint">[U]</span></div>
         </div>
     </div>
 
     <script>
-        // スマホでのオーディオ再生制限を解除するためのコンテキスト
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const gameView = document.getElementById('game-view');
         const startBtn = document.getElementById('start-btn');
         const songTitleEl = document.getElementById('song-title');
+        const scoreDisplay = document.getElementById('score-display');
+        const comboDisplay = document.getElementById('combo-display');
+        const progressBar = document.getElementById('progress-bar');
+        const judgmentDisplay = document.getElementById('judgment-display');
 
-        const keyIds = ['key-A', 'key-S', 'key-D', 'key-F', 'key-G', 'key-H', 'key-J', 'key-K'];
+        const allKeyIds = ['key-A','key-S','key-D','key-F','key-G','key-H','key-J','key-K','key-W','key-E','key-T','key-Y','key-U'];
+
+        // ゲーム進行管理用変数
+        let score = 0;
+        let combo = 0;
+        let activeNotes = [];
+        let progressInterval = null;
 
         const songs = {
             free: { title: "自由演奏（フリーモード）", data: [] },
             twinkle: {
-                title: "⭐ きらきら星 (フル演奏)",
+                title: "⭐ きらきら星",
                 data: [
                     ['key-A', 0.0], ['key-A', 0.7], ['key-G', 1.4], ['key-G', 2.1], ['key-H', 2.8], ['key-H', 3.5], ['key-G', 4.2],
                     ['key-F', 5.6], ['key-F', 6.3], ['key-D', 7.0], ['key-D', 7.7], ['key-S', 8.4], ['key-S', 9.1], ['key-A', 9.8],
@@ -105,7 +166,7 @@
                 ]
             },
             garibu: {
-                title: "🏝️ ガリブの島 (フル演奏版)",
+                title: "🏝️ ガリブの島",
                 data: [
                     ['key-D', 0.0], ['key-F', 0.5], ['key-G', 1.0], ['key-H', 1.5],
                     ['key-H', 2.0], ['key-G', 2.5], ['key-F', 3.0], ['key-D', 3.5],
@@ -117,7 +178,8 @@
                     ['key-D', 13.5], ['key-0', 14.0],
                     ['key-H', 15.0], ['key-H', 15.5], ['key-J', 16.0], ['key-K', 16.5],
                     ['key-K', 17.0], ['key-J', 17.5], ['key-H', 18.0], ['key-G', 18.5],
-                    ['key-F', 19.0], ['key-G', 19.5], ['key-H', 20.0], ['key-J', 20.5],
+                    // ★サビ直前の盛り上がりを「黒鍵（ファ#=key-T）」に変えて本格的に！
+                    ['key-T', 19.0], ['key-G', 19.5], ['key-H', 20.0], ['key-J', 20.5],
                     ['key-H', 21.0], ['key-0', 21.5],
                     ['key-K', 22.5], ['key-0', 23.0], ['key-K', 23.5], ['key-J', 24.0],
                     ['key-H', 24.5], ['key-G', 25.0], ['key-H', 25.5], ['key-0', 26.0],
@@ -141,9 +203,32 @@
             startBtn.style.display = 'none';
         }
 
-        let activeNotes = [];
+        // 1. 判定結果を画面中央にパッと出して消すシステム
+        function showJudgmentEffect(type) {
+            judgmentDisplay.innerHTML = ''; 
+            
+            const txt = document.createElement('div');
+            txt.className = `judgment-text ${type.toLowerCase()}`;
+            txt.textContent = type;
+            
+            if (combo >= 2) {
+                const comboTxt = document.createElement('div');
+                comboTxt.className = 'combo-text';
+                comboTxt.textContent = `${combo} COMBO`;
+                txt.appendChild(comboTxt);
+            }
+            
+            judgmentDisplay.appendChild(txt);
+            
+            // 0.5秒後に文字を綺麗に消去
+            setTimeout(() => {
+                if (judgmentDisplay.firstChild === txt) {
+                    judgmentDisplay.innerHTML = '';
+                }
+            }, 500);
+        }
 
-        // 🎹 【コアロジック】鍵盤を押した（タップした）瞬間の処理
+        // 🎹 鍵盤が押された瞬間の判定ロジック
         function handleKeyDown(keyId) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const targetKey = document.getElementById(keyId);
@@ -160,15 +245,40 @@
                     const viewRect = gameView.getBoundingClientRect();
                     const noteTopInsideView = rect.top - viewRect.top;
 
-                    // スマホの画面比率を考慮した柔軟な判定基準（判定ライン前後）
-                    if (noteTopInsideView >= (viewRect.height - 190) && noteTopInsideView <= (viewRect.height - 120)) {
+                    // 判定ライン（底面から130px）の上での正確なズレ幅を計算
+                    const targetTop = viewRect.height - 156; 
+                    const diff = Math.abs(noteTopInsideView - targetTop);
+
+                    if (diff <= 50) { // 判定に収まっているか
                         playHitSound(); 
                         playTone(parseFloat(targetKey.getAttribute('data-note'))); 
+                        
+                        // 1 & 3. 厳密なスコア計算とコンボ加算
+                        if (diff <= 18) {
+                            score += 100;
+                            combo++;
+                            showJudgmentEffect('PERFECT');
+                        } else {
+                            score += 50;
+                            combo++;
+                            showJudgmentEffect('GREAT');
+                        }
+                        
+                        // スコア画面更新
+                        scoreDisplay.textContent = `SCORE: ${score}`;
+                        comboDisplay.textContent = `${combo} COMBO`;
+                        comboDisplay.style.opacity = '1';
+
                         noteObj.element.remove(); 
                         activeNotes.splice(matchingNoteIndex, 1);
                         return;
                     }
                 }
+                
+                // お手つき（タイミングの合わない空振り）はMISS扱い
+                combo = 0;
+                comboDisplay.style.opacity = '0';
+                showJudgmentEffect('MISS');
                 playMissSound(); 
             } else {
                 playTone(parseFloat(targetKey.getAttribute('data-note')));
@@ -180,7 +290,7 @@
             if (targetKey) targetKey.classList.remove('active');
         }
 
-        // 💻 PC用のキーボードイベント
+        // PCキーボード用（黒鍵の入力をW, E, T, Y, Uに対応配置）
         const pressedKeys = {};
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && currentSongId !== 'free' && !startBtn.disabled) {
@@ -188,7 +298,7 @@
                 return;
             }
             const keyId = `key-${e.key.toUpperCase()}`;
-            if (pressedKeys[e.key.toUpperCase()] || !keyIds.includes(keyId)) return;
+            if (pressedKeys[e.key.toUpperCase()] || !allKeyIds.includes(keyId)) return;
             pressedKeys[e.key.toUpperCase()] = true;
             handleKeyDown(keyId);
         });
@@ -198,9 +308,8 @@
             handleKeyUp(`key-${e.key.toUpperCase()}`);
         });
 
-        // 📱 スマホ/タッチ ＆ PC/マウス 両対応の統合イベント登録
-        document.querySelectorAll('.white-key').forEach(key => {
-            // スマホ用タッチイベント（遅延ゼロ）
+        // スマホ＆PCハイブリッド型タッチイベント
+        document.querySelectorAll('.white-key, .black-key').forEach(key => {
             key.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 handleKeyDown(key.id);
@@ -211,7 +320,6 @@
                 handleKeyUp(key.id);
             }, {passive: false});
 
-            // PCマウス用イベント
             key.addEventListener('mousedown', () => handleKeyDown(key.id));
             key.addEventListener('mouseup', () => handleKeyUp(key.id));
             key.addEventListener('mouseleave', () => handleKeyUp(key.id));
@@ -219,48 +327,85 @@
 
         startBtn.addEventListener('click', startPlaying);
 
+        // 3. 曲の進行度を視覚化するタイムライン処理
         function startPlaying() {
             if (!currentSong || currentSong.data.length === 0) return;
             startBtn.disabled = true;
             startBtn.textContent = "演奏中...";
             
+            // スコアをリセット
+            score = 0;
+            combo = 0;
+            scoreDisplay.textContent = "SCORE: 0";
+            comboDisplay.style.opacity = '0';
+            progressBar.style.width = '0%';
+            
+            const lastNote = currentSong.data[currentSong.data.length - 1];
+            const totalGameTime = (lastNote[1] + 2.5) * 1000; 
+
+            // 上部のプログレスバーを時間経過で滑らかに伸ばす
+            const startTime = Date.now();
+            progressInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const pct = Math.min((elapsed / totalGameTime) * 100, 100);
+                progressBar.style.width = `${pct}%`;
+            }, 50);
+
+            // 音データに合わせてノーツを生成
             currentSong.data.forEach(([keyId, delay]) => {
                 setTimeout(() => { createNoteBlock(keyId); }, delay * 1000);
             });
 
-            const lastNote = currentSong.data[currentSong.data.length - 1];
-            const totalGameTime = (lastNote[1] + 2.5) * 1000; 
-
+            // 終了処理
             setTimeout(() => {
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
                 startBtn.disabled = false;
-                startBtn.textContent = "演奏スタート！";
+                startBtn.textContent = "再挑戦！";
             }, totalGameTime);
         }
 
+        // ノーツブロック生成
         function createNoteBlock(keyId) {
             if (keyId === 'key-0') return;
 
             const block = document.createElement('div');
             block.classList.add('note-block');
             
-            // 【変更】固定pxではなく、レーンのインデックスに基づいて「%」で横位置を指定
             const keyEl = document.getElementById(keyId);
-            const index = keyEl.getAttribute('data-index');
-            block.style.left = `calc(${index * 12.5}% + 1px)`;
-            block.textContent = keyEl ? keyEl.getAttribute('data-name') : "";
+            const isBlack = keyEl.getAttribute('data-is-black') === 'true';
+            const index = parseFloat(keyEl.getAttribute('data-index'));
 
+            if (isBlack) {
+                block.classList.add('black-note');
+                // 黒鍵ノーツは白鍵2つの間の位置（%）に完全に合わせる
+                block.style.width = `calc(12.5% * 0.65)`;
+                block.style.left = `calc(${index * 12.5}% + 1px)`;
+                block.style.zIndex = "3"; // 黒鍵ノーツを手前に
+            } else {
+                block.style.width = `calc(12.5% - 2px)`;
+                block.style.left = `calc(${index * 12.5}% + 1px)`;
+            }
+            
+            block.textContent = keyEl ? keyEl.getAttribute('data-name') : "";
             gameView.appendChild(block);
 
             const noteObj = { keyId: keyId, element: block };
             activeNotes.push(noteObj);
 
+            // 画面の下まで落ちきったら自動的に「MISS」にする処理
             block.addEventListener('animationend', () => {
                 block.remove();
-                activeNotes = activeNotes.filter(n => n !== noteObj);
+                if (activeNotes.includes(noteObj)) {
+                    combo = 0;
+                    comboDisplay.style.opacity = '0';
+                    showJudgmentEffect('MISS');
+                    activeNotes = activeNotes.filter(n => n !== noteObj);
+                }
             });
         }
 
-        // 音声合成（変更なし）
+        // 音声合成
         function playTone(frequency) {
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
