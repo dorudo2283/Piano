@@ -5,36 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
     <title>演奏画面 - リズムWebピアノ</title>
     <style>
+        /* 画面全体をぴったり100%にフィットさせ、スクロールを完全排除 */
         html, body { position: fixed; width: 100%; height: 100%; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
         body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #1a1a1a; color: white; margin: 0; }
         
-        /* スコア・ゲージエリア */
-        .header-area { margin: 8px 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; z-index: 10; width: 100%; max-width: 456px; box-sizing: border-box; }
+        /* スコア・ゲージエリア（高さを固定して安定化） */
+        .header-area { height: 75px; margin: 5px 0 0 0; display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 10; width: 100%; max-width: 456px; box-sizing: border-box; }
         .nav-row { display: flex; width: 100%; justify-content: space-between; align-items: center; padding: 0 10px; box-sizing: border-box; }
-        .menu-btn { padding: 6px 12px; background: #555; color: white; border: none; border-radius: 5px; text-decoration: none; font-size: 13px; font-weight: bold; }
-        .start-btn { padding: 8px 16px; font-size: 14px; background: #007BFF; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .menu-btn { padding: 5px 10px; background: #555; color: white; border: none; border-radius: 5px; text-decoration: none; font-size: 12px; font-weight: bold; }
+        .start-btn { padding: 6px 14px; font-size: 13px; background: #007BFF; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .start-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
         
-        .status-row { display: flex; width: 100%; justify-content: space-between; padding: 0 10px; font-size: 14px; font-weight: bold; color: #00d2ff; }
-        .progress-container { width: calc(100% - 20px); height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-top: 2px; }
+        .status-row { display: flex; width: 100%; justify-content: space-between; padding: 0 10px; font-size: 13px; font-weight: bold; color: #00d2ff; }
+        .progress-container { width: calc(100% - 20px); height: 5px; background: #333; border-radius: 3px; overflow: hidden; }
         .progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #00d2ff, #0066ff); transition: width 0.1s linear; }
 
-        /* ゲーム画面（ノーツが降ってくるエリア） */
-        .game-view { position: relative; width: 100%; max-width: 456px; height: calc(100% - 140px); max-height: 550px; background: #222; border: 3px solid #444; border-bottom: none; overflow: hidden; box-sizing: border-box; }
+        /* ゲーム画面（余った縦幅をすべて自動で使い切る：flex: 1） */
+        .game-view { position: relative; width: 100%; max-width: 456px; flex: 1; background: #222; border: 3px solid #444; border-bottom: none; overflow: hidden; box-sizing: border-box; }
 
         /* レーンガイド線 */
         .lane-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; pointer-events: none; z-index: 1; }
         .line { flex: 1; border-right: 1px dashed rgba(255, 255, 255, 0.12); height: 100%; box-sizing: border-box; }
         .line:last-child { border-right: none; }
 
-        /* ノーツデザイン（連打時の視認性を極限まで高めるためスッキリ化） */
+        /* ノーツデザイン */
         .note-block {
-            position: absolute; height: 20px;
+            position: absolute; height: 18px;
             background: linear-gradient(#00d2ff, #0066ff);
             border-radius: 4px; box-shadow: 0 0 8px #00d2ff;
             animation: fall 2.5s linear forwards; z-index: 2;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 10px; font-weight: bold; color: white; box-sizing: border-box;
+            box-sizing: border-box;
         }
         .note-block.black-note {
             background: linear-gradient(#ff00d2, #aa00ff);
@@ -42,49 +42,49 @@
         }
 
         /* 判定テキスト表示位置 */
-        .judgment-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; font-weight: bold; text-shadow: 0 0 10px black; pointer-events: none; z-index: 5; text-align: center; }
+        .judgment-display { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: bold; text-shadow: 0 0 10px black; pointer-events: none; z-index: 5; text-align: center; }
         .judgment-text.perfect { color: #ffea00; }
         .judgment-text.great { color: #00ff66; }
         .judgment-text.miss { color: #ff0055; }
-        .combo-text { font-size: 16px; color: white; margin-top: 2px; }
+        .combo-text { font-size: 15px; color: white; margin-top: 2px; }
 
-        /* 判定ライン（底面から20px上に固定） */
-        .judgment-line { position: absolute; bottom: 20px; width: 100%; height: 4px; background: #ff0055; box-shadow: 0 0 10px #ff0055; z-index: 3; }
+        /* 判定ライン（底面から15px上に固定） */
+        .judgment-line { position: absolute; bottom: 15px; width: 100%; height: 4px; background: #ff0055; box-shadow: 0 0 10px #ff0055; z-index: 3; }
 
-        /* ピアノ鍵盤エリア */
-        .piano-container { display: flex; background: #333; width: 100%; height: 130px; position: absolute; bottom: 0; z-index: 4; box-sizing: border-box; }
+        /* ピアノ鍵盤エリア（高さを130pxから85pxにコンパクト化！） */
+        .piano-container { display: flex; background: #333; width: 100%; max-width: 456px; height: 85px; position: relative; z-index: 4; box-sizing: border-box; }
         
         /* 白鍵 */
         .white-key {
             flex: 1; height: 100%; background: white; color: #333; border: 1px solid #333; border-top: none; border-radius: 0 0 4px 4px;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-            padding-bottom: 12px; font-weight: bold; box-shadow: inset 0 -5px 0 #ccc; box-sizing: border-box;
+            padding-bottom: 6px; font-weight: bold; font-size: 11px; box-shadow: inset 0 -4px 0 #ccc; box-sizing: border-box;
             touch-action: none; z-index: 1;
         }
         .white-key.active { background: #00d2ff; color: white; box-shadow: none; transform: scaleY(0.96); transform-origin: top; }
         
-        /* 黒鍵 */
+        /* 黒鍵（白鍵の縮小に合わせてこちらもバランスを最適化） */
         .black-key {
-            position: absolute; width: calc(12.5% * 0.65); height: 60%; background: #111; color: white;
+            position: absolute; width: calc(12.5% * 0.65); height: 58%; background: #111; color: white;
             border-radius: 0 0 3px 3px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-            padding-bottom: 5px; font-size: 10px; border: 1px solid #000; box-shadow: inset 0 -4px 0 #444; box-sizing: border-box;
+            padding-bottom: 4px; font-size: 9px; border: 1px solid #000; box-shadow: inset 0 -3px 0 #444; box-sizing: border-box;
             touch-action: none; z-index: 2;
         }
         .black-key.active { background: #ff00d2; color: white; box-shadow: none; transform: scaleY(0.96); transform-origin: top; }
 
-        /* 黒鍵の正確な配置位置 */
+        /* 黒鍵の配置位置 */
         #key-W { left: calc(12.5% * 1 - (12.5% * 0.65) / 2); }
         #key-E { left: calc(12.5% * 2 - (12.5% * 0.65) / 2); }
         #key-T { left: calc(12.5% * 4 - (12.5% * 0.65) / 2); }
         #key-Y { left: calc(12.5% * 5 - (12.5% * 0.65) / 2); }
         #key-U { left: calc(12.5% * 6 - (12.5% * 0.65) / 2); }
 
-        .key-hint { font-size: 9px; color: #888; }
+        .key-hint { font-size: 8px; color: #888; margin-top: 1px; }
         .black-key .key-hint { color: #aaa; }
 
         @keyframes fall {
             0% { top: -25px; }
-            100% { top: calc(100% - 20px); } /* 判定線のジャスト位置を終点に変更 */
+            100% { top: calc(100% - 15px); } /* 判定線の位置変更に合わせて終点を調整 */
         }
     </style>
 </head>
@@ -93,7 +93,7 @@
     <div class="header-area">
         <div class="nav-row">
             <a href="music.html" class="menu-btn">🎵 曲選択へ</a>
-            <h2 id="song-title">自由演奏</h2>
+            <h2 id="song-title" style="margin:0; font-size: 16px;">自由演奏</h2>
             <button id="start-btn" class="start-btn">スタート</button>
         </div>
         <div class="status-row">
@@ -148,7 +148,6 @@
         let activeNotes = [];
         let progressInterval = null;
 
-        // 楽曲データベース
         const songs = {
             free: { title: "自由演奏（フリーモード）", data: [] },
             twinkle: {
@@ -169,29 +168,20 @@
             rushe: {
                 title: "🎹 Rush E (本家再現ドラマチック版)",
                 data: [
-                    // === 前半：簡単Vパート（誰もが油断する静かなイントロ） ===
                     ['key-A', 0.0], ['key-A', 0.5], ['key-A', 1.0], ['key-A', 1.5],
                     ['key-A', 2.0], ['key-D', 2.3], ['key-G', 2.6], ['key-A', 3.0],
                     ['key-A', 4.0], ['key-A', 4.5], ['key-A', 5.0], ['key-A', 5.5],
                     ['key-A', 6.0], ['key-F', 6.3], ['key-D', 6.6], ['key-A', 7.0],
-
-                    // 加速へのビルドアップ
                     ['key-A', 8.0], ['key-S', 8.3], ['key-D', 8.6], ['key-F', 8.9],
                     ['key-G', 9.2], ['key-H', 9.5], ['key-J', 9.8], ['key-K', 10.1],
-                    
-                    // === 後半：難関パート（怒涛の縦連打地獄突入） ===
                     ['key-A', 11.0], ['key-A', 11.15], ['key-A', 11.3], ['key-A', 11.45],
                     ['key-A', 11.6], ['key-A', 11.75], ['key-A', 11.9], ['key-A', 12.05],
-                    
                     ['key-A', 12.3], ['key-S', 12.5], ['key-A', 12.7], ['key-D', 12.9],
                     ['key-A', 13.1], ['key-F', 13.3], ['key-A', 13.5], ['key-G', 13.7],
-
                     ['key-A', 14.0], ['key-A', 14.12], ['key-A', 14.24], ['key-A', 14.36],
                     ['key-A', 14.48], ['key-A', 14.6], ['key-A', 14.72], ['key-A', 14.84],
-                    
                     ['key-W', 15.2], ['key-A', 15.4], ['key-E', 15.6], ['key-A', 15.8],
                     ['key-T', 16.0], ['key-A', 16.2], ['key-Y', 16.4], ['key-A', 16.6],
-
                     ['key-A', 17.0], ['key-D', 17.1], ['key-G', 17.2], ['key-K', 17.3], ['key-K', 17.8]
                 ]
             }
@@ -221,7 +211,6 @@
             setTimeout(() => { if (judgmentDisplay.firstChild === txt) judgmentDisplay.innerHTML = ''; }, 500);
         }
 
-        // 超高速連打対応：判定アルゴリズム
         function handleKeyDown(keyId) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const targetKey = document.getElementById(keyId);
@@ -230,7 +219,6 @@
             targetKey.classList.add('active');
 
             if (currentSongId !== 'free') {
-                // 同じレーンに複数降ってきた場合、必ず「一番下（古い）」のノーツを取得する
                 const matchingNoteIndex = activeNotes.findIndex(n => n.keyId === keyId);
                 
                 if (matchingNoteIndex !== -1) {
@@ -238,9 +226,8 @@
                     const rect = noteObj.element.getBoundingClientRect();
                     const viewRect = gameView.getBoundingClientRect();
                     
-                    // 画面サイズ変動に完全対応したミリ秒単位の位置計測
                     const noteBottomInsideView = rect.bottom - viewRect.top;
-                    const targetLinePos = viewRect.height - 20; 
+                    const targetLinePos = viewRect.height - 15; // 判定線位置（15px）に同期
                     const diff = Math.abs(noteBottomInsideView - targetLinePos);
 
                     if (diff <= 45) { 
@@ -277,7 +264,6 @@
             if (targetKey) targetKey.classList.remove('active');
         }
 
-        // キーボード入力管理
         const pressedKeys = {};
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && currentSongId !== 'free' && !startBtn.disabled) { startPlaying(); return; }
@@ -291,7 +277,6 @@
             handleKeyUp(`key-${e.key.toUpperCase()}`);
         });
 
-        // マウス＆タッチのハイブリッド制御
         document.querySelectorAll('.white-key, .black-key').forEach(key => {
             key.addEventListener('touchstart', (e) => { e.preventDefault(); handleKeyDown(key.id); }, {passive: false});
             key.addEventListener('touchend', (e) => { e.preventDefault(); handleKeyUp(key.id); }, {passive: false});
@@ -354,7 +339,6 @@
                 block.style.left = `calc(${index * 12.5}% + 1px)`;
             }
             
-            block.textContent = ""; // 連打中の視覚負荷を下げるため文字は非表示
             gameView.appendChild(block);
 
             const noteObj = { keyId: keyId, element: block };
@@ -371,31 +355,17 @@
             });
         }
 
-        // 音響心理学に基づいた疑似アコースティックピアノ音源（3つのオシレーター＋減衰フィルター）
         function playTone(frequency) {
             const now = audioCtx.currentTime;
-            
-            const osc1 = audioCtx.createOscillator(); const gain1 = audioCtx.createGain();
-            osc1.type = 'sine'; osc1.frequency.value = frequency;
-
-            const osc2 = audioCtx.createOscillator(); const gain2 = audioCtx.createGain();
-            osc2.type = 'triangle'; osc2.frequency.value = frequency * 2;
-
-            const osc3 = audioCtx.createOscillator(); const gain3 = audioCtx.createGain();
-            osc3.type = 'sawtooth'; osc3.frequency.value = frequency * 3;
-
-            const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(frequency * 4, now);
-            filter.frequency.exponentialRampToValueAtTime(frequency * 1.5, now + 0.8);
-
-            // エンベロープ（アタック＆リリースの時間差制御）
+            const osc1 = audioCtx.createOscillator(); const gain1 = audioCtx.createGain(); osc1.type = 'sine'; osc1.frequency.value = frequency;
+            const osc2 = audioCtx.createOscillator(); const gain2 = audioCtx.createGain(); osc2.type = 'triangle'; osc2.frequency.value = frequency * 2;
+            const osc3 = audioCtx.createOscillator(); const gain3 = audioCtx.createGain(); osc3.type = 'sawtooth'; osc3.frequency.value = frequency * 3;
+            const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(frequency * 4, now); filter.frequency.exponentialRampToValueAtTime(frequency * 1.5, now + 0.8);
             gain1.gain.setValueAtTime(0, now); gain1.gain.linearRampToValueAtTime(0.6, now + 0.005); gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
             gain2.gain.setValueAtTime(0, now); gain2.gain.linearRampToValueAtTime(0.2, now + 0.005); gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
             gain3.gain.setValueAtTime(0, now); gain3.gain.linearRampToValueAtTime(0.05, now + 0.002); gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-
             osc1.connect(gain1); gain1.connect(filter); osc2.connect(gain2); gain2.connect(filter); osc3.connect(gain3); gain3.connect(filter);
             filter.connect(audioCtx.destination);
-
             osc1.start(now); osc1.stop(now + 1.2); osc2.start(now); osc2.stop(now + 0.5); osc3.start(now); osc3.stop(now + 0.1);
         }
 
@@ -409,10 +379,8 @@
         }
 
         function playMissSound() {
-            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-            osc.type = 'sawtooth'; osc.frequency.value = 110; const now = audioCtx.currentTime;
-            gain.gain.setValueAtTime(0.15, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.15);
-            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now + 0.15);
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = 'sawtooth'; osc.frequency.value = 110; const now = audioCtx.currentTime;
+            gain.gain.setValueAtTime(0.15, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.15); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now + 0.15);
         }
     </script>
 </body>
