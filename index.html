@@ -8,7 +8,7 @@
         html, body { position: fixed; width: 100%; height: 100%; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
         body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #1a1a1a; color: white; margin: 0; }
         
-        /* 1. スコア・ゲージエリア（進行状況を上部に可視化） */
+        /* スコア・ゲージエリア */
         .header-area { margin: 8px 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; z-index: 10; width: 100%; max-width: 456px; box-sizing: border-box; }
         .nav-row { display: flex; width: 100%; justify-content: space-between; align-items: center; padding: 0 10px; box-sizing: border-box; }
         .menu-btn { padding: 6px 12px; background: #555; color: white; border: none; border-radius: 5px; text-decoration: none; font-size: 13px; font-weight: bold; }
@@ -19,43 +19,42 @@
         .progress-container { width: calc(100% - 20px); height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-top: 2px; }
         .progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #00d2ff, #0066ff); transition: width 0.1s linear; }
 
-        /* ゲーム画面（内寸456px、黒鍵追加に伴い高さを少し調整） */
-        .game-view { position: relative; width: 100%; max-width: 456px; height: calc(100% - 120px); max-height: 550px; background: #222; border: 3px solid #444; border-bottom: none; overflow: hidden; box-sizing: border-box; }
+        /* ゲーム画面（ノーツが降ってくるエリア） */
+        .game-view { position: relative; width: 100%; max-width: 456px; height: calc(100% - 140px); max-height: 550px; background: #222; border: 3px solid #444; border-bottom: none; overflow: hidden; box-sizing: border-box; }
 
-        /* レーンを区切る縦のガイド線（白鍵8列に対応） */
+        /* レーンガイド線 */
         .lane-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; pointer-events: none; z-index: 1; }
         .line { flex: 1; border-right: 1px dashed rgba(255, 255, 255, 0.12); height: 100%; box-sizing: border-box; }
         .line:last-child { border-right: none; }
 
-        /* 落ちてくるノーツ（%幅で完全にレーンと同期。黒鍵は半透明か別色にすることも可能ですが、視認性重視で統一） */
+        /* ノーツデザイン（連打時の視認性を極限まで高めるためスッキリ化） */
         .note-block {
-            position: absolute; height: 26px;
+            position: absolute; height: 20px;
             background: linear-gradient(#00d2ff, #0066ff);
             border-radius: 4px; box-shadow: 0 0 8px #00d2ff;
             animation: fall 2.5s linear forwards; z-index: 2;
             display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: bold; color: white; box-sizing: border-box;
+            font-size: 10px; font-weight: bold; color: white; box-sizing: border-box;
         }
-        /* 黒鍵用ノーツの見た目を少し変えて識別しやすく（紫グラデーション） */
         .note-block.black-note {
             background: linear-gradient(#ff00d2, #aa00ff);
             box-shadow: 0 0 8px #ff00d2;
         }
 
-        /* 3. 判定テキスト＆コンボのエフェクト表示位置 */
-        .judgment-display { position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; font-weight: bold; text-shadow: 0 0 10px black; pointer-events: none; z-index: 5; text-align: center; }
+        /* 判定テキスト表示位置 */
+        .judgment-display { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; font-weight: bold; text-shadow: 0 0 10px black; pointer-events: none; z-index: 5; text-align: center; }
         .judgment-text.perfect { color: #ffea00; }
         .judgment-text.great { color: #00ff66; }
         .judgment-text.miss { color: #ff0055; }
         .combo-text { font-size: 16px; color: white; margin-top: 2px; }
 
-        /* 判定ライン */
-        .judgment-line { position: absolute; bottom: 130px; width: 100%; height: 3px; background: #ff0055; box-shadow: 0 0 10px #ff0055; z-index: 3; }
+        /* 判定ライン（底面から20px上に固定） */
+        .judgment-line { position: absolute; bottom: 20px; width: 100%; height: 4px; background: #ff0055; box-shadow: 0 0 10px #ff0055; z-index: 3; }
 
-        /* 4. ピアノ鍵盤エリア（黒鍵を上に重ねるため relative） */
+        /* ピアノ鍵盤エリア */
         .piano-container { display: flex; background: #333; width: 100%; height: 130px; position: absolute; bottom: 0; z-index: 4; box-sizing: border-box; }
         
-        /* 白鍵（8鍵） */
+        /* 白鍵 */
         .white-key {
             flex: 1; height: 100%; background: white; color: #333; border: 1px solid #333; border-top: none; border-radius: 0 0 4px 4px;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
@@ -64,7 +63,7 @@
         }
         .white-key.active { background: #00d2ff; color: white; box-shadow: none; transform: scaleY(0.96); transform-origin: top; }
         
-        /* 黒鍵（5鍵）：白鍵の隙間に絶対配置で浮かせる */
+        /* 黒鍵 */
         .black-key {
             position: absolute; width: calc(12.5% * 0.65); height: 60%; background: #111; color: white;
             border-radius: 0 0 3px 3px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
@@ -73,7 +72,7 @@
         }
         .black-key.active { background: #ff00d2; color: white; box-shadow: none; transform: scaleY(0.96); transform-origin: top; }
 
-        /* 黒鍵の正確な横位置（白鍵8マスの隙間に配置） */
+        /* 黒鍵の正確な配置位置 */
         #key-W { left: calc(12.5% * 1 - (12.5% * 0.65) / 2); }
         #key-E { left: calc(12.5% * 2 - (12.5% * 0.65) / 2); }
         #key-T { left: calc(12.5% * 4 - (12.5% * 0.65) / 2); }
@@ -84,8 +83,8 @@
         .black-key .key-hint { color: #aaa; }
 
         @keyframes fall {
-            0% { top: -35px; }
-            100% { top: 100%; }
+            0% { top: -25px; }
+            100% { top: calc(100% - 20px); } /* 判定線のジャスト位置を終点に変更 */
         }
     </style>
 </head>
@@ -93,7 +92,7 @@
 
     <div class="header-area">
         <div class="nav-row">
-            <a href="music.html" class="menu-btn">🎵 演奏曲設定</a>
+            <a href="music.html" class="menu-btn">🎵 曲選択へ</a>
             <h2 id="song-title">自由演奏</h2>
             <button id="start-btn" class="start-btn">スタート</button>
         </div>
@@ -111,27 +110,25 @@
             <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
             <div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div>
         </div>
-        
         <div class="judgment-display" id="judgment-display"></div>
-        
         <div class="judgment-line"></div>
-        
-        <div class="piano-container">
-            <div class="white-key" id="key-A" data-is-black="false" data-index="0" data-note="261.63" data-name="ド"><span>ド</span><span class="key-hint">[A]</span></div>
-            <div class="white-key" id="key-S" data-is-black="false" data-index="1" data-note="293.66" data-name="レ"><span>レ</span><span class="key-hint">[S]</span></div>
-            <div class="white-key" id="key-D" data-is-black="false" data-index="2" data-note="329.63" data-name="ミ"><span>ミ</span><span class="key-hint">[D]</span></div>
-            <div class="white-key" id="key-F" data-is-black="false" data-index="3" data-note="349.23" data-name="ファ"><span>ファ</span><span class="key-hint">[F]</span></div>
-            <div class="white-key" id="key-G" data-is-black="false" data-index="4" data-note="392.00" data-name="ソ"><span>ソ</span><span class="key-hint">[G]</span></div>
-            <div class="white-key" id="key-H" data-is-black="false" data-index="5" data-note="440.00" data-name="ラ"><span>ラ</span><span class="key-hint">[H]</span></div>
-            <div class="white-key" id="key-J" data-is-black="false" data-index="6" data-note="493.88" data-name="シ"><span>シ</span><span class="key-hint">[J]</span></div>
-            <div class="white-key" id="key-K" data-is-black="false" data-index="7" data-note="523.25" data-name="ド↑"><span>ド↑</span><span class="key-hint">[K]</span></div>
+    </div>
+    
+    <div class="piano-container">
+        <div class="white-key" id="key-A" data-is-black="false" data-index="0" data-note="261.63" data-name="ド"><span>ド</span><span class="key-hint">[A]</span></div>
+        <div class="white-key" id="key-S" data-is-black="false" data-index="1" data-note="293.66" data-name="レ"><span>レ</span><span class="key-hint">[S]</span></div>
+        <div class="white-key" id="key-D" data-is-black="false" data-index="2" data-note="329.63" data-name="ミ"><span>ミ</span><span class="key-hint">[D]</span></div>
+        <div class="white-key" id="key-F" data-is-black="false" data-index="3" data-note="349.23" data-name="ファ"><span>ファ</span><span class="key-hint">[F]</span></div>
+        <div class="white-key" id="key-G" data-is-black="false" data-index="4" data-note="392.00" data-name="ソ"><span>ソ</span><span class="key-hint">[G]</span></div>
+        <div class="white-key" id="key-H" data-is-black="false" data-index="5" data-note="440.00" data-name="ラ"><span>ラ</span><span class="key-hint">[H]</span></div>
+        <div class="white-key" id="key-J" data-is-black="false" data-index="6" data-note="493.88" data-name="シ"><span>シ</span><span class="key-hint">[J]</span></div>
+        <div class="white-key" id="key-K" data-is-black="false" data-index="7" data-note="523.25" data-name="ド↑"><span>ド↑</span><span class="key-hint">[K]</span></div>
 
-            <div class="black-key" id="key-W" data-is-black="true" data-index="0.5" data-note="277.18" data-name="ド#"><span>ド#</span><span class="key-hint">[W]</span></div>
-            <div class="black-key" id="key-E" data-is-black="true" data-index="1.5" data-note="311.13" data-name="レ#"><span>レ#</span><span class="key-hint">[E]</span></div>
-            <div class="black-key" id="key-T" data-is-black="true" data-index="3.5" data-note="369.99" data-name="ファ#"><span>ファ#</span><span class="key-hint">[T]</span></div>
-            <div class="black-key" id="key-Y" data-is-black="true" data-index="4.5" data-note="415.30" data-name="ソ#"><span>ソ#</span><span class="key-hint">[Y]</span></div>
-            <div class="black-key" id="key-U" data-is-black="true" data-index="5.5" data-note="466.16" data-name="ラ#"><span>ラ#</span><span class="key-hint">[U]</span></div>
-        </div>
+        <div class="black-key" id="key-W" data-is-black="true" data-index="0.5" data-note="277.18" data-name="ド#"><span>ド#</span><span class="key-hint">[W]</span></div>
+        <div class="black-key" id="key-E" data-is-black="true" data-index="1.5" data-note="311.13" data-name="レ#"><span>レ#</span><span class="key-hint">[E]</span></div>
+        <div class="black-key" id="key-T" data-is-black="true" data-index="3.5" data-note="369.99" data-name="ファ#"><span>ファ#</span><span class="key-hint">[T]</span></div>
+        <div class="black-key" id="key-Y" data-is-black="true" data-index="4.5" data-note="415.30" data-name="ソ#"><span>ソ#</span><span class="key-hint">[Y]</span></div>
+        <div class="black-key" id="key-U" data-is-black="true" data-index="5.5" data-note="466.16" data-name="ラ#"><span>ラ#</span><span class="key-hint">[U]</span></div>
     </div>
 
     <script>
@@ -146,23 +143,19 @@
 
         const allKeyIds = ['key-A','key-S','key-D','key-F','key-G','key-H','key-J','key-K','key-W','key-E','key-T','key-Y','key-U'];
 
-        // ゲーム進行管理用変数
         let score = 0;
         let combo = 0;
         let activeNotes = [];
         let progressInterval = null;
 
+        // 楽曲データベース
         const songs = {
             free: { title: "自由演奏（フリーモード）", data: [] },
             twinkle: {
                 title: "⭐ きらきら星",
                 data: [
                     ['key-A', 0.0], ['key-A', 0.7], ['key-G', 1.4], ['key-G', 2.1], ['key-H', 2.8], ['key-H', 3.5], ['key-G', 4.2],
-                    ['key-F', 5.6], ['key-F', 6.3], ['key-D', 7.0], ['key-D', 7.7], ['key-S', 8.4], ['key-S', 9.1], ['key-A', 9.8],
-                    ['key-G', 11.2], ['key-G', 11.9], ['key-F', 12.6], ['key-F', 13.3], ['key-D', 14.0], ['key-D', 14.7], ['key-S', 15.4],
-                    ['key-G', 16.8], ['key-G', 17.5], ['key-F', 18.2], ['key-F', 18.9], ['key-D', 19.6], ['key-D', 20.3], ['key-S', 21.0],
-                    ['key-A', 22.4], ['key-A', 23.1], ['key-G', 24.1], ['key-G', 24.8], ['key-H', 25.5], ['key-H', 26.2], ['key-G', 26.9],
-                    ['key-F', 28.3], ['key-F', 29.0], ['key-D', 29.7], ['key-D', 30.4], ['key-S', 31.1], ['key-S', 31.8], ['key-A', 32.5]
+                    ['key-F', 5.6], ['key-F', 6.3], ['key-D', 7.0], ['key-D', 7.7], ['key-S', 8.4], ['key-S', 9.1], ['key-A', 9.8]
                 ]
             },
             garibu: {
@@ -170,62 +163,36 @@
                 data: [
                     ['key-D', 0.0], ['key-F', 0.5], ['key-G', 1.0], ['key-H', 1.5],
                     ['key-H', 2.0], ['key-G', 2.5], ['key-F', 3.0], ['key-D', 3.5],
-                    ['key-S', 4.0], ['key-D', 4.5], ['key-F', 5.0], ['key-G', 5.5],
-                    ['key-F', 6.0], ['key-0', 6.5],
-                    ['key-D', 7.5], ['key-F', 8.0], ['key-G', 8.5], ['key-H', 9.0],
-                    ['key-H', 9.5], ['key-G', 10.0], ['key-F', 10.5], ['key-D', 11.0],
-                    ['key-S', 11.5], ['key-D', 12.0], ['key-F', 12.5], ['key-S', 13.0],
-                    ['key-D', 13.5], ['key-0', 14.0],
-                    ['key-H', 15.0], ['key-H', 15.5], ['key-J', 16.0], ['key-K', 16.5],
-                    ['key-K', 17.0], ['key-J', 17.5], ['key-H', 18.0], ['key-G', 18.5],
-                    // ★サビ直前の盛り上がりを「黒鍵（ファ#=key-T）」に変えて本格的に！
-                    ['key-T', 19.0], ['key-G', 19.5], ['key-H', 20.0], ['key-J', 20.5],
-                    ['key-H', 21.0], ['key-0', 21.5],
-                    ['key-K', 22.5], ['key-0', 23.0], ['key-K', 23.5], ['key-J', 24.0],
-                    ['key-H', 24.5], ['key-G', 25.0], ['key-H', 25.5], ['key-0', 26.0],
-                    ['key-J', 26.5], ['key-0', 27.0], ['key-J', 27.5], ['key-H', 28.0],
-                    ['key-G', 28.5], ['key-F', 29.0], ['key-G', 29.5], ['key-0', 30.0],
-                    ['key-H', 30.5], ['key-0', 31.0], ['key-H', 31.5], ['key-G', 32.0],
-                    ['key-F', 32.5], ['key-D', 33.0], ['key-F', 33.5], ['key-0', 34.0],
-                    ['key-S', 34.5], ['key-D', 35.0], ['key-F', 35.5], ['key-S', 36.0],
-                    ['key-D', 36.5]
+                    ['key-T', 19.0], ['key-G', 19.5], ['key-H', 20.0], ['key-J', 20.5]
                 ]
             },
             rushe: {
-                title: "🎹 Rush E (狂気の連打版)",
-                // [鍵盤ID, 降らせるタイミング(秒)]
+                title: "🎹 Rush E (本家再現ドラマチック版)",
                 data: [
-                    // --- イントロ：静かな狂気の始まり ---
+                    // === 前半：簡単Vパート（誰もが油断する静かなイントロ） ===
                     ['key-A', 0.0], ['key-A', 0.5], ['key-A', 1.0], ['key-A', 1.5],
                     ['key-A', 2.0], ['key-D', 2.3], ['key-G', 2.6], ['key-A', 3.0],
-                    
                     ['key-A', 4.0], ['key-A', 4.5], ['key-A', 5.0], ['key-A', 5.5],
                     ['key-A', 6.0], ['key-F', 6.3], ['key-D', 6.6], ['key-A', 7.0],
 
-                    // --- ビートが入って加速するゾーン ---
+                    // 加速へのビルドアップ
                     ['key-A', 8.0], ['key-S', 8.3], ['key-D', 8.6], ['key-F', 8.9],
                     ['key-G', 9.2], ['key-H', 9.5], ['key-J', 9.8], ['key-K', 10.1],
                     
-                    // --- ここから本番：Rush E名物「E（今回はA）の超高速連打」 ---
-                    // 0.15秒間隔の超ド級縦連打
+                    // === 後半：難関パート（怒涛の縦連打地獄突入） ===
                     ['key-A', 11.0], ['key-A', 11.15], ['key-A', 11.3], ['key-A', 11.45],
                     ['key-A', 11.6], ['key-A', 11.75], ['key-A', 11.9], ['key-A', 12.05],
                     
-                    // 左右の揺さぶり（A連打の合間に他の音が挟まる）
                     ['key-A', 12.3], ['key-S', 12.5], ['key-A', 12.7], ['key-D', 12.9],
                     ['key-A', 13.1], ['key-F', 13.3], ['key-A', 13.5], ['key-G', 13.7],
 
-                    // 第2波：さらに密度が上がる連打
                     ['key-A', 14.0], ['key-A', 14.12], ['key-A', 14.24], ['key-A', 14.36],
                     ['key-A', 14.48], ['key-A', 14.6], ['key-A', 14.72], ['key-A', 14.84],
                     
-                    // 黒鍵も交えた、ラストのスプリント
                     ['key-W', 15.2], ['key-A', 15.4], ['key-E', 15.6], ['key-A', 15.8],
                     ['key-T', 16.0], ['key-A', 16.2], ['key-Y', 16.4], ['key-A', 16.6],
 
-                    // フィニッシュ（同時押し風の超高速階段）
-                    ['key-A', 17.0], ['key-D', 17.1], ['key-G', 17.2], ['key-K', 17.3],
-                    ['key-K', 17.8]
+                    ['key-A', 17.0], ['key-D', 17.1], ['key-G', 17.2], ['key-K', 17.3], ['key-K', 17.8]
                 ]
             }
         };
@@ -235,37 +202,26 @@
         const currentSong = songs[currentSongId];
 
         songTitleEl.textContent = currentSong ? currentSong.title : "自由演奏（フリーモード）";
-        
         if (currentSongId === 'free' || !currentSong || currentSong.data.length === 0) {
             startBtn.style.display = 'none';
         }
 
-        // 1. 判定結果を画面中央にパッと出して消すシステム
         function showJudgmentEffect(type) {
             judgmentDisplay.innerHTML = ''; 
-            
             const txt = document.createElement('div');
             txt.className = `judgment-text ${type.toLowerCase()}`;
             txt.textContent = type;
-            
             if (combo >= 2) {
                 const comboTxt = document.createElement('div');
                 comboTxt.className = 'combo-text';
                 comboTxt.textContent = `${combo} COMBO`;
                 txt.appendChild(comboTxt);
             }
-            
             judgmentDisplay.appendChild(txt);
-            
-            // 0.5秒後に文字を綺麗に消去
-            setTimeout(() => {
-                if (judgmentDisplay.firstChild === txt) {
-                    judgmentDisplay.innerHTML = '';
-                }
-            }, 500);
+            setTimeout(() => { if (judgmentDisplay.firstChild === txt) judgmentDisplay.innerHTML = ''; }, 500);
         }
 
-        // 🎹 鍵盤が押された瞬間の判定ロジック
+        // 超高速連打対応：判定アルゴリズム
         function handleKeyDown(keyId) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const targetKey = document.getElementById(keyId);
@@ -274,34 +230,29 @@
             targetKey.classList.add('active');
 
             if (currentSongId !== 'free') {
+                // 同じレーンに複数降ってきた場合、必ず「一番下（古い）」のノーツを取得する
                 const matchingNoteIndex = activeNotes.findIndex(n => n.keyId === keyId);
                 
                 if (matchingNoteIndex !== -1) {
                     const noteObj = activeNotes[matchingNoteIndex];
                     const rect = noteObj.element.getBoundingClientRect();
                     const viewRect = gameView.getBoundingClientRect();
-                    const noteTopInsideView = rect.top - viewRect.top;
+                    
+                    // 画面サイズ変動に完全対応したミリ秒単位の位置計測
+                    const noteBottomInsideView = rect.bottom - viewRect.top;
+                    const targetLinePos = viewRect.height - 20; 
+                    const diff = Math.abs(noteBottomInsideView - targetLinePos);
 
-                    // 判定ライン（底面から130px）の上での正確なズレ幅を計算
-                    const targetTop = viewRect.height - 156; 
-                    const diff = Math.abs(noteTopInsideView - targetTop);
-
-                    if (diff <= 50) { // 判定に収まっているか
+                    if (diff <= 45) { 
                         playHitSound(); 
                         playTone(parseFloat(targetKey.getAttribute('data-note'))); 
                         
-                        // 1 & 3. 厳密なスコア計算とコンボ加算
-                        if (diff <= 18) {
-                            score += 100;
-                            combo++;
-                            showJudgmentEffect('PERFECT');
+                        if (diff <= 15) {
+                            score += 100; combo++; showJudgmentEffect('PERFECT');
                         } else {
-                            score += 50;
-                            combo++;
-                            showJudgmentEffect('GREAT');
+                            score += 50; combo++; showJudgmentEffect('GREAT');
                         }
                         
-                        // スコア画面更新
                         scoreDisplay.textContent = `SCORE: ${score}`;
                         comboDisplay.textContent = `${combo} COMBO`;
                         comboDisplay.style.opacity = '1';
@@ -312,7 +263,6 @@
                     }
                 }
                 
-                // お手つき（タイミングの合わない空振り）はMISS扱い
                 combo = 0;
                 comboDisplay.style.opacity = '0';
                 showJudgmentEffect('MISS');
@@ -327,36 +277,24 @@
             if (targetKey) targetKey.classList.remove('active');
         }
 
-        // PCキーボード用（黒鍵の入力をW, E, T, Y, Uに対応配置）
+        // キーボード入力管理
         const pressedKeys = {};
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && currentSongId !== 'free' && !startBtn.disabled) {
-                startPlaying();
-                return;
-            }
+            if (e.key === 'Enter' && currentSongId !== 'free' && !startBtn.disabled) { startPlaying(); return; }
             const keyId = `key-${e.key.toUpperCase()}`;
             if (pressedKeys[e.key.toUpperCase()] || !allKeyIds.includes(keyId)) return;
             pressedKeys[e.key.toUpperCase()] = true;
             handleKeyDown(keyId);
         });
-        
         window.addEventListener('keyup', (e) => {
             pressedKeys[e.key.toUpperCase()] = false;
             handleKeyUp(`key-${e.key.toUpperCase()}`);
         });
 
-        // スマホ＆PCハイブリッド型タッチイベント
+        // マウス＆タッチのハイブリッド制御
         document.querySelectorAll('.white-key, .black-key').forEach(key => {
-            key.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                handleKeyDown(key.id);
-            }, {passive: false});
-
-            key.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                handleKeyUp(key.id);
-            }, {passive: false});
-
+            key.addEventListener('touchstart', (e) => { e.preventDefault(); handleKeyDown(key.id); }, {passive: false});
+            key.addEventListener('touchend', (e) => { e.preventDefault(); handleKeyUp(key.id); }, {passive: false});
             key.addEventListener('mousedown', () => handleKeyDown(key.id));
             key.addEventListener('mouseup', () => handleKeyUp(key.id));
             key.addEventListener('mouseleave', () => handleKeyUp(key.id));
@@ -364,15 +302,12 @@
 
         startBtn.addEventListener('click', startPlaying);
 
-        // 3. 曲の進行度を視覚化するタイムライン処理
         function startPlaying() {
             if (!currentSong || currentSong.data.length === 0) return;
             startBtn.disabled = true;
             startBtn.textContent = "演奏中...";
             
-            // スコアをリセット
-            score = 0;
-            combo = 0;
+            score = 0; combo = 0;
             scoreDisplay.textContent = "SCORE: 0";
             comboDisplay.style.opacity = '0';
             progressBar.style.width = '0%';
@@ -380,7 +315,6 @@
             const lastNote = currentSong.data[currentSong.data.length - 1];
             const totalGameTime = (lastNote[1] + 2.5) * 1000; 
 
-            // 上部のプログレスバーを時間経過で滑らかに伸ばす
             const startTime = Date.now();
             progressInterval = setInterval(() => {
                 const elapsed = Date.now() - startTime;
@@ -388,12 +322,10 @@
                 progressBar.style.width = `${pct}%`;
             }, 50);
 
-            // 音データに合わせてノーツを生成
             currentSong.data.forEach(([keyId, delay]) => {
                 setTimeout(() => { createNoteBlock(keyId); }, delay * 1000);
             });
 
-            // 終了処理
             setTimeout(() => {
                 clearInterval(progressInterval);
                 progressBar.style.width = '100%';
@@ -402,7 +334,6 @@
             }, totalGameTime);
         }
 
-        // ノーツブロック生成
         function createNoteBlock(keyId) {
             if (keyId === 'key-0') return;
 
@@ -415,22 +346,20 @@
 
             if (isBlack) {
                 block.classList.add('black-note');
-                // 黒鍵ノーツは白鍵2つの間の位置（%）に完全に合わせる
                 block.style.width = `calc(12.5% * 0.65)`;
                 block.style.left = `calc(${index * 12.5}% + 1px)`;
-                block.style.zIndex = "3"; // 黒鍵ノーツを手前に
+                block.style.zIndex = "3";
             } else {
                 block.style.width = `calc(12.5% - 2px)`;
                 block.style.left = `calc(${index * 12.5}% + 1px)`;
             }
             
-            block.textContent = keyEl ? keyEl.getAttribute('data-name') : "";
+            block.textContent = ""; // 連打中の視覚負荷を下げるため文字は非表示
             gameView.appendChild(block);
 
             const noteObj = { keyId: keyId, element: block };
             activeNotes.push(noteObj);
 
-            // 画面の下まで落ちきったら自動的に「MISS」にする処理
             block.addEventListener('animationend', () => {
                 block.remove();
                 if (activeNotes.includes(noteObj)) {
@@ -442,79 +371,48 @@
             });
         }
 
-        // 音響心理学に基づいた擬似アコースティックピアノ音源
+        // 音響心理学に基づいた疑似アコースティックピアノ音源（3つのオシレーター＋減衰フィルター）
         function playTone(frequency) {
             const now = audioCtx.currentTime;
-
-            // 1. 基音（芯のある音）
-            const osc1 = audioCtx.createOscillator();
-            const gain1 = audioCtx.createGain();
-            osc1.type = 'sine'; // 濁りのない綺麗な芯
-            osc1.frequency.value = frequency;
-
-            // 2. 高次倍音（ピアノ特有のカンカンした金属感と輝きを足す）
-            const osc2 = audioCtx.createOscillator();
-            const gain2 = audioCtx.createGain();
-            osc2.type = 'triangle'; // 三角波で中音域の厚みを補正
-            osc2.frequency.value = frequency * 2; // 1オクターブ上
-
-            const osc3 = audioCtx.createOscillator();
-            const gain3 = audioCtx.createGain();
-            osc3.type = 'sawtooth'; // 鋸歯状波で高音のきらびやかさを追加
-            osc3.frequency.value = frequency * 3; // 1.5オクターブ上（第3倍音）
-
-            // --- フィルターで電子音っぽすぎる高音のトゲを削る ---
-            const filter = audioCtx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(frequency * 4, now);
-            filter.frequency.exponentialRampToValueAtTime(frequency * 1.5, now + 0.8); // 減衰と共に音をこもらせる
-
-            // --- 音量エンベロープ（エンハンサー）：ピアノの打鍵を再現 ---
-            // 叩いた瞬間（0.005秒）に最大音量になり、その後滑らかに消えていく
-            gain1.gain.setValueAtTime(0, now);
-            gain1.gain.linearRampToValueAtTime(0.6, now + 0.005);
-            gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-
-            gain2.gain.setValueAtTime(0, now);
-            gain2.gain.linearRampToValueAtTime(0.2, now + 0.005);
-            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5); // 高音は早めに消える
-
-            gain3.gain.setValueAtTime(0, now);
-            gain3.gain.linearRampToValueAtTime(0.05, now + 0.002); // 鍵盤が弦を叩く「アタック感」
-            gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.1); // 一瞬で消す
-
-            // 接続
-            osc1.connect(gain1); gain1.connect(filter);
-            osc2.connect(gain2); gain2.connect(filter);
-            osc3.connect(gain3); gain3.connect(filter);
             
+            const osc1 = audioCtx.createOscillator(); const gain1 = audioCtx.createGain();
+            osc1.type = 'sine'; osc1.frequency.value = frequency;
+
+            const osc2 = audioCtx.createOscillator(); const gain2 = audioCtx.createGain();
+            osc2.type = 'triangle'; osc2.frequency.value = frequency * 2;
+
+            const osc3 = audioCtx.createOscillator(); const gain3 = audioCtx.createGain();
+            osc3.type = 'sawtooth'; osc3.frequency.value = frequency * 3;
+
+            const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(frequency * 4, now);
+            filter.frequency.exponentialRampToValueAtTime(frequency * 1.5, now + 0.8);
+
+            // エンベロープ（アタック＆リリースの時間差制御）
+            gain1.gain.setValueAtTime(0, now); gain1.gain.linearRampToValueAtTime(0.6, now + 0.005); gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+            gain2.gain.setValueAtTime(0, now); gain2.gain.linearRampToValueAtTime(0.2, now + 0.005); gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+            gain3.gain.setValueAtTime(0, now); gain3.gain.linearRampToValueAtTime(0.05, now + 0.002); gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+            osc1.connect(gain1); gain1.connect(filter); osc2.connect(gain2); gain2.connect(filter); osc3.connect(gain3); gain3.connect(filter);
             filter.connect(audioCtx.destination);
 
-            // 再生開始と停止
-            osc1.start(now); osc1.stop(now + 1.2);
-            osc2.start(now); osc2.stop(now + 0.5);
-            osc3.start(now); osc3.stop(now + 0.1);
+            osc1.start(now); osc1.stop(now + 1.2); osc2.start(now); osc2.stop(now + 0.5); osc3.start(now); osc3.stop(now + 0.1);
         }
 
         function playHitSound() {
-            const bufferSize = audioCtx.sampleRate * 0.04;
-            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const bufferSize = audioCtx.sampleRate * 0.04; const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
             const noise = audioCtx.createBufferSource(); noise.buffer = buffer;
             const filter = audioCtx.createBiquadFilter(); filter.type = 'highpass'; filter.frequency.value = 1500;
-            const gain = audioCtx.createGain(); gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
-            noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
-            noise.start();
+            const gain = audioCtx.createGain(); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
+            noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination); noise.start();
         }
 
         function playMissSound() {
             const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.type = 'sawtooth'; osc.frequency.value = 110; const now = audioCtx.currentTime;
             gain.gain.setValueAtTime(0.15, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.15);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(now); osc.stop(now + 0.15);
+            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now + 0.15);
         }
     </script>
 </body>
