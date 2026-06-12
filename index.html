@@ -6,37 +6,37 @@
     <style>
         body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #1a1a1a; color: white; margin: 0; overflow: hidden; }
         
-        .header-area { margin: 15px; display: flex; gap: 20px; align-items: center; z-index: 10; }
+        .header-area { margin: 15px; display: flex; gap: 20px; align-items: center; z-index: 10; height: 50px; }
         .menu-btn { padding: 8px 15px; background: #555; color: white; border: none; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 14px; font-weight: bold; }
         .menu-btn:hover { background: #777; }
         .start-btn { padding: 10px 20px; font-size: 16px; background: #007BFF; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .start-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
 
-        /* ゲーム画面（480px = 鍵盤幅460px + 外枠。位置ズレを完全に防ぐコンテナ設計） */
-        .game-view { position: relative; width: 466px; height: 500px; background: #222; border: 3px solid #444; border-bottom: none; overflow: hidden; }
+        /* ゲーム画面（外枠のサイズ計算を厳密に：内寸456px） */
+        .game-view { position: relative; width: 456px; height: 500px; background: #222; border: 3px solid #444; border-bottom: none; overflow: hidden; }
 
-        /* レーンを区切る縦のガイド線 */
-        .lane-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; pointer-events: none; }
-        .line { flex: 1; border-right: 1px dashed rgba(255, 255, 255, 0.15); height: 100%; }
+        /* レーンを区切る縦のガイド線（8分割） */
+        .lane-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; pointer-events: none; z-index: 1; }
+        .line { flex: 1; border-right: 1px dashed rgba(255, 255, 255, 0.15); height: 100%; box-sizing: border-box; }
         .line:last-child { border-right: none; }
 
-        /* 落ちてくるノーツ（幅56pxで鍵盤の横幅と完全一致） */
+        /* 落ちてくるノーツ（鍵盤幅57pxと完全に一致、枠線を考慮して55pxに調整） */
         .note-block {
-            position: absolute; width: 56px; height: 30px;
+            position: absolute; width: 55px; height: 30px;
             background: linear-gradient(#00d2ff, #0066ff);
             border-radius: 4px; box-shadow: 0 0 8px #00d2ff;
             animation: fall 2.5s linear forwards; z-index: 2;
             display: flex; align-items: center; justify-content: center;
-            font-size: 12px; font-weight: bold; color: white;
+            font-size: 12px; font-weight: bold; color: white; box-sizing: border-box;
         }
 
         /* 判定ライン */
         .judgment-line { position: absolute; bottom: 120px; width: 100%; height: 3px; background: #ff0055; box-shadow: 0 0 10px #ff0055; z-index: 3; }
 
         /* ピアノ鍵盤エリア */
-        .piano-container { display: flex; background: #333; padding: 0 3px; width: 460px; height: 110px; position: absolute; bottom: 0; z-index: 4; box-sizing: border-box; }
+        .piano-container { display: flex; background: #333; width: 456px; height: 120px; position: absolute; bottom: 0; z-index: 4; box-sizing: border-box; }
         .white-key {
-            flex: 1; height: 100%; background: white; color: #333; cursor: pointer; border: 1px solid #333; border-top: none; border-radius: 0 0 4px 4px;
+            width: 57px; height: 100%; background: white; color: #333; cursor: pointer; border: 1px solid #333; border-top: none; border-radius: 0 0 4px 4px;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
             padding-bottom: 10px; font-weight: bold; user-select: none; box-shadow: inset 0 -5px 0 #ccc; box-sizing: border-box;
         }
@@ -52,7 +52,7 @@
 <body>
 
     <div class="header-area">
-        <a href="music.html" class="menu-btn">🎵 曲設定（選択）を開く</a>
+        <a href="music.html" class="menu-btn">🎵 曲設定を開く</a>
         <h2 id="song-title">自由演奏（フリーモード）</h2>
         <button id="start-btn" class="start-btn">演奏スタート！ (Enter)</button>
     </div>
@@ -83,49 +83,44 @@
         const startBtn = document.getElementById('start-btn');
         const songTitleEl = document.getElementById('song-title');
 
-        // 鍵盤のインデックス（0〜7）に基づき、横位置を完全に等間隔（1マス57px）で計算
+        // 幅57pxの鍵盤にノーツの位置（left）を1pxの狂いもなく完全同期させる計算
         const keyIds = ['key-A', 'key-S', 'key-D', 'key-F', 'key-G', 'key-H', 'key-J', 'key-K'];
         const keyPositions = {};
         keyIds.forEach((id, index) => {
-            keyPositions[id] = index * 57 + 3; // 左の余白3pxを考慮して完全に中央配置
+            keyPositions[id] = index * 57 + 1; // 完全にラインの内側へ収める
         });
 
+        // 🎶 【拡張された曲データベース】
         const songs = {
             free: { title: "自由演奏（フリーモード）", data: [] },
             twinkle: {
-                title: "⭐ きらきら星",
+                title: "⭐ きらきら星 (フル演奏)",
+                // [鍵盤ID, 降らせるタイミング(秒)]：24音すべて網羅
                 data: [
-                    ['key-A', 0.0], ['key-A', 1.0], ['key-G', 2.0], ['key-G', 3.0],
-                    ['key-H', 4.0], ['key-H', 5.0], ['key-G', 6.0],
-                    ['key-F', 8.0], ['key-F', 9.0], ['key-D', 10.0], ['key-D', 11.0],
-                    ['key-S', 12.0], ['key-S', 13.0], ['key-A', 14.0]
-                ]
-            },
-            custom: {
-                title: "🎵 カスタム テスト曲",
-                data: [
-                    ['key-A', 0.0], ['key-D', 0.5], ['key-G', 1.0], ['key-K', 1.5],
-                    ['key-K', 2.5], ['key-G', 3.0], ['key-D', 3.5], ['key-A', 4.0]
+                    ['key-A', 0.0], ['key-A', 0.7], ['key-G', 1.4], ['key-G', 2.1], ['key-H', 2.8], ['key-H', 3.5], ['key-G', 4.2], // ドドソソララソ
+                    ['key-F', 5.6], ['key-F', 6.3], ['key-D', 7.0], ['key-D', 7.7], ['key-S', 8.4], ['key-S', 9.1], ['key-A', 9.8], // ファファミミレレド
+                    ['key-G', 11.2], ['key-G', 11.9], ['key-F', 12.6], ['key-F', 13.3], ['key-D', 14.0], ['key-D', 14.7], ['key-S', 15.4], // ソソファファミミレ
+                    ['key-G', 16.8], ['key-G', 17.5], ['key-F', 18.2], ['key-F', 18.9], ['key-D', 19.6], ['key-D', 20.3], ['key-S', 21.0], // ソソファファミミレ
+                    ['key-A', 22.4], ['key-A', 23.1], ['key-G', 24.1], ['key-G', 24.8], ['key-H', 25.5], ['key-H', 26.2], ['key-G', 26.9], // ドドソソララソ
+                    ['key-F', 28.3], ['key-F', 29.0], ['key-D', 29.7], ['key-D', 30.4], ['key-S', 31.1], ['key-S', 31.8], ['key-A', 32.5]  // ファファミミレレド
                 ]
             }
         };
 
         const urlParams = new URLSearchParams(window.location.search);
-        const currentSongId = urlParams.get('song') || 'free'; // 初期状態は「free（自由演奏）」
+        const currentSongId = urlParams.get('song') || 'free'; 
         const currentSong = songs[currentSongId];
 
         songTitleEl.textContent = currentSong ? currentSong.title : "自由演奏（フリーモード）";
         
-        // 自由演奏モードならスタートボタンを無効化（押す必要がないため）
+        // 🛠️ 【修正】自由演奏モードならスタートボタン自体を画面から消す（認知的負荷の低減）
         if (currentSongId === 'free' || !currentSong || currentSong.data.length === 0) {
-            startBtn.disabled = true;
-            startBtn.textContent = "自由演奏中（Enter不要）";
+            startBtn.style.display = 'none';
         }
 
-        // 現在画面上を流れているアクティブなノーツを管理する配列
         let activeNotes = [];
 
-        // 1. キーボード＆マウスクリックの処理
+        // キーボード＆マウスイベント
         const pressedKeys = {};
         function handleKeyDown(keyId) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -134,34 +129,27 @@
 
             targetKey.classList.add('active');
 
-            // 🎵 リズムゲームの判定ロジック
             if (currentSongId !== 'free') {
-                // 押された鍵盤のレーンにあるノーツを探す
                 const matchingNoteIndex = activeNotes.findIndex(n => n.keyId === keyId);
                 
                 if (matchingNoteIndex !== -1) {
                     const noteObj = activeNotes[matchingNoteIndex];
-                    // 判定ラインの位置（bottom: 120px = top: 350px付近）
                     const rect = noteObj.element.getBoundingClientRect();
                     const viewRect = gameView.getBoundingClientRect();
                     const noteTopInsideView = rect.top - viewRect.top;
 
-                    // 判定ライン（320px〜380pxの間で押せたら成功）
+                    // 判定窓（ピンクの線の前後）
                     if (noteTopInsideView >= 310 && noteTopInsideView <= 380) {
-                        playHitSound(); // パチッ（成功音）
-                        const freq = parseFloat(targetKey.getAttribute('data-note'));
-                        playTone(freq); // ピアノ音
-                        noteObj.element.remove(); // 画面から消す
+                        playHitSound(); 
+                        playTone(parseFloat(targetKey.getAttribute('data-note'))); 
+                        noteObj.element.remove(); 
                         activeNotes.splice(matchingNoteIndex, 1);
                         return;
                     }
                 }
-                // タイミングが合わなかった、またはノーツがないレーンを押した場合はミス
-                playMissSound(); // ブー（ミス音）
+                playMissSound(); 
             } else {
-                // 自由演奏モードなら無条件で音を鳴らす
-                const freq = parseFloat(targetKey.getAttribute('data-note'));
-                playTone(freq);
+                playTone(parseFloat(targetKey.getAttribute('data-note')));
             }
         }
 
@@ -171,12 +159,10 @@
         }
 
         window.addEventListener('keydown', (e) => {
-            // Enterキーで演奏スタート
-            if (e.key === 'Enter' && !startBtn.disabled) {
+            if (e.key === 'Enter' && currentSongId !== 'free' && !startBtn.disabled) {
                 startPlaying();
                 return;
             }
-
             const keyId = `key-${e.key.toUpperCase()}`;
             if (pressedKeys[e.key.toUpperCase()] || !keyPositions[keyId]) return;
             pressedKeys[e.key.toUpperCase()] = true;
@@ -194,24 +180,34 @@
             key.addEventListener('mouseleave', () => handleKeyUp(key.id));
         });
 
-        // 2. ゲーム開始処理
+        // 2. ゲーム開始・終了処理
         startBtn.addEventListener('click', startPlaying);
 
         function startPlaying() {
             if (!currentSong || currentSong.data.length === 0) return;
             startBtn.disabled = true;
+            startBtn.textContent = "演奏中...";
             
             currentSong.data.forEach(([keyId, delay]) => {
                 setTimeout(() => { createNoteBlock(keyId); }, delay * 1000);
             });
+
+            // 🛠️ 【修正】最後の音が降ってきて、画面外に消え去るタイミングを計算してボタンを復活させる
+            const lastNote = currentSong.data[currentSong.data.length - 1];
+            const totalGameTime = (lastNote[1] + 2.5) * 1000; // 最後の音の発生1秒後＋アニメーション時間2.5秒
+
+            setTimeout(() => {
+                startBtn.disabled = false;
+                startBtn.textContent = "演奏スタート！ (Enter)";
+            }, totalGameTime);
         }
 
         function createNoteBlock(keyId) {
             const block = document.createElement('div');
+            block.createElement
             block.classList.add('note-block');
             block.style.left = `${keyPositions[keyId]}px`;
             
-            // 【新機能】ノーツ自体にド〜ド↑の文字を表示
             const keyEl = document.getElementById(keyId);
             block.textContent = keyEl ? keyEl.getAttribute('data-name') : "";
 
@@ -220,14 +216,13 @@
             const noteObj = { keyId: keyId, element: block };
             activeNotes.push(noteObj);
 
-            // 落ちきったら自動消去（かつ判定配列からも削除）
             block.addEventListener('animationend', () => {
                 block.remove();
                 activeNotes = activeNotes.filter(n => n !== noteObj);
             });
         }
 
-        // 🔊 ピアノ音（通常）
+        // 音声合成エンジン（前回同様）
         function playTone(frequency) {
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
@@ -242,42 +237,32 @@
             oscillator.stop(now + 0.8);
         }
 
-        // 🔊 【新機能】合ってるときの音（パチッという短い高音ノイズ）
         function playHitSound() {
-            const bufferSize = audioCtx.sampleRate * 0.05; // 0.05秒の短い音
+            const bufferSize = audioCtx.sampleRate * 0.04;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = Math.random() * 2 - 1; // ホワイトノイズ
-            }
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
             const noise = audioCtx.createBufferSource();
             noise.buffer = buffer;
             const filter = audioCtx.createBiquadFilter();
-            filter.type = 'highpass'; // 高音だけ通して「パチッ」にする
-            filter.frequency.value = 1000;
+            filter.type = 'highpass';
+            filter.frequency.value = 1500;
             const gain = audioCtx.createGain();
-            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-
-            noise.connect(filter);
-            filter.connect(gain);
-            gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
+            noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
             noise.start();
         }
 
-        // 🔊 【新機能】ミスしたときの音（低いブーという音）
         function playMissSound() {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = 'sawtooth'; // 濁った音ののこぎり波
-            osc.frequency.value = 120; // 低い周波数
+            osc.type = 'sawtooth'; osc.frequency.value = 110;
             const now = audioCtx.currentTime;
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.linearRampToValueAtTime(0.001, now + 0.2); // 0.2秒で消える
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now);
-            osc.stop(now + 0.2);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.linearRampToValueAtTime(0.001, now + 0.15);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + 0.15);
         }
     </script>
 </body>
