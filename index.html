@@ -12,7 +12,7 @@
         .start-btn { padding: 10px 20px; font-size: 16px; background: #007BFF; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .start-btn:disabled { background: #444; color: #888; cursor: not-allowed; }
 
-        /* ゲーム画面（外枠のサイズ計算を厳密に：内寸456px） */
+        /* ゲーム画面（内寸456px） */
         .game-view { position: relative; width: 456px; height: 500px; background: #222; border: 3px solid #444; border-bottom: none; overflow: hidden; }
 
         /* レーンを区切る縦のガイド線（8分割） */
@@ -20,7 +20,7 @@
         .line { flex: 1; border-right: 1px dashed rgba(255, 255, 255, 0.15); height: 100%; box-sizing: border-box; }
         .line:last-child { border-right: none; }
 
-        /* 落ちてくるノーツ（鍵盤幅57pxと完全に一致、枠線を考慮して55pxに調整） */
+        /* 落ちてくるノーツ（鍵盤幅57pxに完全同期） */
         .note-block {
             position: absolute; width: 55px; height: 30px;
             background: linear-gradient(#00d2ff, #0066ff);
@@ -83,26 +83,57 @@
         const startBtn = document.getElementById('start-btn');
         const songTitleEl = document.getElementById('song-title');
 
-        // 幅57pxの鍵盤にノーツの位置（left）を1pxの狂いもなく完全同期させる計算
+        // 位置の計算：完全に等間隔になるようインデックスに同期
         const keyIds = ['key-A', 'key-S', 'key-D', 'key-F', 'key-G', 'key-H', 'key-J', 'key-K'];
         const keyPositions = {};
         keyIds.forEach((id, index) => {
-            keyPositions[id] = index * 57 + 1; // 完全にラインの内側へ収める
+            keyPositions[id] = index * 57 + 0.5; // 位置ズレを完全に防ぐ補正
         });
 
-        // 🎶 【拡張された曲データベース】
+        // 🎶 曲のデータベース（songs の波括弧の中に「ガリブの島」をしっかり格納）
         const songs = {
             free: { title: "自由演奏（フリーモード）", data: [] },
             twinkle: {
                 title: "⭐ きらきら星 (フル演奏)",
-                // [鍵盤ID, 降らせるタイミング(秒)]：24音すべて網羅
                 data: [
-                    ['key-A', 0.0], ['key-A', 0.7], ['key-G', 1.4], ['key-G', 2.1], ['key-H', 2.8], ['key-H', 3.5], ['key-G', 4.2], // ドドソソララソ
-                    ['key-F', 5.6], ['key-F', 6.3], ['key-D', 7.0], ['key-D', 7.7], ['key-S', 8.4], ['key-S', 9.1], ['key-A', 9.8], // ファファミミレレド
-                    ['key-G', 11.2], ['key-G', 11.9], ['key-F', 12.6], ['key-F', 13.3], ['key-D', 14.0], ['key-D', 14.7], ['key-S', 15.4], // ソソファファミミレ
-                    ['key-G', 16.8], ['key-G', 17.5], ['key-F', 18.2], ['key-F', 18.9], ['key-D', 19.6], ['key-D', 20.3], ['key-S', 21.0], // ソソファファミミレ
-                    ['key-A', 22.4], ['key-A', 23.1], ['key-G', 24.1], ['key-G', 24.8], ['key-H', 25.5], ['key-H', 26.2], ['key-G', 26.9], // ドドソソララソ
-                    ['key-F', 28.3], ['key-F', 29.0], ['key-D', 29.7], ['key-D', 30.4], ['key-S', 31.1], ['key-S', 31.8], ['key-A', 32.5]  // ファファミミレレド
+                    ['key-A', 0.0], ['key-A', 0.7], ['key-G', 1.4], ['key-G', 2.1], ['key-H', 2.8], ['key-H', 3.5], ['key-G', 4.2],
+                    ['key-F', 5.6], ['key-F', 6.3], ['key-D', 7.0], ['key-D', 7.7], ['key-S', 8.4], ['key-S', 9.1], ['key-A', 9.8],
+                    ['key-G', 11.2], ['key-G', 11.9], ['key-F', 12.6], ['key-F', 13.3], ['key-D', 14.0], ['key-D', 14.7], ['key-S', 15.4],
+                    ['key-G', 16.8], ['key-G', 17.5], ['key-F', 18.2], ['key-F', 18.9], ['key-D', 19.6], ['key-D', 20.3], ['key-S', 21.0],
+                    ['key-A', 22.4], ['key-A', 23.1], ['key-G', 24.1], ['key-G', 24.8], ['key-H', 25.5], ['key-H', 26.2], ['key-G', 26.9],
+                    ['key-F', 28.3], ['key-F', 29.0], ['key-D', 29.7], ['key-D', 30.4], ['key-S', 31.1], ['key-S', 31.8], ['key-A', 32.5]
+                ]
+            },
+           garibu: {
+                title: "🏝️ ガリブの島 (フル演奏版)",
+                // [鍵盤ID, 降らせるタイミング(秒)]
+                data: [
+                    // --- 前半（Aメロ） ---
+                    ['key-D', 0.0], ['key-F', 0.5], ['key-G', 1.0], ['key-H', 1.5], // ミ ファ ソ ラ
+                    ['key-H', 2.0], ['key-G', 2.5], ['key-F', 3.0], ['key-D', 3.5], // ラ ソ ファ ミ
+                    ['key-S', 4.0], ['key-D', 4.5], ['key-F', 5.0], ['key-G', 5.5], // レ ミ ファ ソ
+                    ['key-F', 6.0], ['key-0', 6.5],                                 // ファ（休み）
+                    
+                    ['key-D', 7.5], ['key-F', 8.0], ['key-G', 8.5], ['key-H', 9.0], // ミ ファ ソ ラ
+                    ['key-H', 9.5], ['key-G', 10.0], ['key-F', 10.5], ['key-D', 11.0], // ラ ソ ファ ミ
+                    ['key-S', 11.5], ['key-D', 12.0], ['key-F', 12.5], ['key-S', 13.0], // レ ミ ファ レ
+                    ['key-D', 13.5], ['key-0', 14.0],                                 // ミ（休み）
+                    
+                    ['key-H', 15.0], ['key-H', 15.5], ['key-J', 16.0], ['key-K', 16.5], // ラ ラ シ ド↑
+                    ['key-K', 17.0], ['key-J', 17.5], ['key-H', 18.0], ['key-G', 18.5], // ド↑ シ ラ ソ
+                    ['key-F', 19.0], ['key-G', 19.5], ['key-H', 20.0], ['key-J', 20.5], // ファ ソ ラ シ
+                    ['key-H', 21.0], ['key-0', 21.5],                                 // ラ（休み）
+
+                    // --- 後半（一番盛り上がるサビ！） ---
+                    ['key-K', 22.5], ['key-0', 23.0], ['key-K', 23.5], ['key-J', 24.0], // ド↑、ド↑シ
+                    ['key-H', 24.5], ['key-G', 25.0], ['key-H', 25.5], ['key-0', 26.0], // ラソラ
+                    ['key-J', 26.5], ['key-0', 27.0], ['key-J', 27.5], ['key-H', 28.0], // シ、シラ
+                    ['key-G', 28.5], ['key-F', 29.0], ['key-G', 29.5], ['key-0', 30.0], // ソファソ
+                    
+                    ['key-H', 30.5], ['key-0', 31.0], ['key-H', 31.5], ['key-G', 32.0], // ラ、ラソ
+                    ['key-F', 32.5], ['key-D', 33.0], ['key-F', 33.5], ['key-0', 34.0], // ミファミ
+                    ['key-S', 34.5], ['key-D', 35.0], ['key-F', 35.5], ['key-S', 36.0], // レミファレ
+                    ['key-D', 36.5]                                                   // ドーーー
                 ]
             }
         };
@@ -113,14 +144,12 @@
 
         songTitleEl.textContent = currentSong ? currentSong.title : "自由演奏（フリーモード）";
         
-        // 🛠️ 【修正】自由演奏モードならスタートボタン自体を画面から消す（認知的負荷の低減）
         if (currentSongId === 'free' || !currentSong || currentSong.data.length === 0) {
             startBtn.style.display = 'none';
         }
 
         let activeNotes = [];
 
-        // キーボード＆マウスイベント
         const pressedKeys = {};
         function handleKeyDown(keyId) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -138,7 +167,6 @@
                     const viewRect = gameView.getBoundingClientRect();
                     const noteTopInsideView = rect.top - viewRect.top;
 
-                    // 判定窓（ピンクの線の前後）
                     if (noteTopInsideView >= 310 && noteTopInsideView <= 380) {
                         playHitSound(); 
                         playTone(parseFloat(targetKey.getAttribute('data-note'))); 
@@ -180,7 +208,6 @@
             key.addEventListener('mouseleave', () => handleKeyUp(key.id));
         });
 
-        // 2. ゲーム開始・終了処理
         startBtn.addEventListener('click', startPlaying);
 
         function startPlaying() {
@@ -192,9 +219,8 @@
                 setTimeout(() => { createNoteBlock(keyId); }, delay * 1000);
             });
 
-            // 🛠️ 【修正】最後の音が降ってきて、画面外に消え去るタイミングを計算してボタンを復活させる
             const lastNote = currentSong.data[currentSong.data.length - 1];
-            const totalGameTime = (lastNote[1] + 2.5) * 1000; // 最後の音の発生1秒後＋アニメーション時間2.5秒
+            const totalGameTime = (lastNote[1] + 2.5) * 1000; 
 
             setTimeout(() => {
                 startBtn.disabled = false;
@@ -203,8 +229,9 @@
         }
 
         function createNoteBlock(keyId) {
+            if (keyId === 'key-0') return; // 休符データならノーツを作らない
+
             const block = document.createElement('div');
-            block.createElement
             block.classList.add('note-block');
             block.style.left = `${keyPositions[keyId]}px`;
             
@@ -222,7 +249,6 @@
             });
         }
 
-        // 音声合成エンジン（前回同様）
         function playTone(frequency) {
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
