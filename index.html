@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>マイ・Webピアノ（キーボード対応版）</title>
+    <style>
+        .piano-container { display: flex; gap: 5px; margin: 50px; }
+        .white-key {
+            width: 70px; height: 220px; border: 2px solid #333;
+            background: white; cursor: pointer; border-radius: 0 0 5px 5px;
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: flex-end; padding-bottom: 15px; font-weight: bold; 
+            user-select: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background 0.1s;
+        }
+        /* キーが押されたとき（クリック、またはPCキーボード）の視覚的フィードバック */
+        .white-key.active, .white-key:active { 
+            background: #e0e0e0; 
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+        .key-hint { font-size: 12px; color: #888; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="piano-container">
+        <div class="white-key" id="key-A" data-note="261.63">
+            <span>ド</span><span class="key-hint">[ A ]</span>
+        </div>
+        <div class="white-key" id="key-S" data-note="293.66">
+            <span>レ</span><span class="key-hint">[ S ]</span>
+        </div>
+        <div class="white-key" id="key-D" data-note="329.63">
+            <span>ミ</span><span class="key-hint">[ D ]</span>
+        </div>
+    </div>
+
+    <script>
+        // 音を鳴らすためのコンテキストを作成
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // 1. クリック（マウス）の処理
+        const keys = document.querySelectorAll('.white-key');
+        keys.forEach(key => {
+            key.addEventListener('mousedown', () => {
+                ensureAudioContext();
+                const frequency = parseFloat(key.getAttribute('data-note'));
+                playTone(frequency);
+            });
+        });
+
+        // 2. パソコンのキーボードの処理（追加部分）
+        // キーの重複連打を防ぐための記録用オブジェクト
+        const pressedKeys = {};
+
+        window.addEventListener('keydown', (event) => {
+            ensureAudioContext();
+            
+            // 押されたキーを大文字に統一（a -> A）
+            const keyName = event.key.toUpperCase(); 
+            
+            // すでに押しっぱなしの状態なら、何度も音を鳴らさない（チャタリング防止）
+            if (pressedKeys[keyName]) return;
+
+            // 対応する画面上の鍵盤を探す（例：キーが'A'なら id="key-A" を探す）
+            const targetKey = document.getElementById(`key-${keyName}`);
+            
+            if (targetKey) {
+                pressedKeys[keyName] = true; // 押された状態を記録
+                targetKey.classList.add('active'); // 画面の鍵盤を沈ませる
+                
+                const frequency = parseFloat(targetKey.getAttribute('data-note'));
+                playTone(frequency);
+            }
+        });
+
+        window.addEventListener('keyup', (event) => {
+            const keyName = event.key.toUpperCase();
+            pressedKeys[keyName] = false; // 押しっぱなし状態を解除
+
+            const targetKey = document.getElementById(`key-${keyName}`);
+            if (targetKey) {
+                targetKey.classList.remove('active'); // 画面の鍵盤を元に戻す
+            }
+        });
+
+        // ブラウザのセキュリティ対策（ユーザーが画面を触るまで音源をミュートする仕様）を回避
+        function ensureAudioContext() {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // 音を鳴らすコアロジック
+        function playTone(frequency) {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.type = 'triangle';
+            oscillator.frequency.value = frequency;
+
+            const now = audioCtx.currentTime;
+            gainNode.gain.setValueAtTime(0.4, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.6); // 0.6秒かけて減衰
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.6);
+        }
+    </script>
+</body>
+</html>
