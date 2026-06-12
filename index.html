@@ -442,16 +442,58 @@
             });
         }
 
-        // 音声合成
+        // 音響心理学に基づいた擬似アコースティックピアノ音源
         function playTone(frequency) {
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.type = 'triangle'; oscillator.frequency.value = frequency;
             const now = audioCtx.currentTime;
-            gainNode.gain.setValueAtTime(0.8, now);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-            oscillator.connect(gainNode); gainNode.connect(audioCtx.destination);
-            oscillator.start(now); oscillator.stop(now + 0.8);
+
+            // 1. 基音（芯のある音）
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.type = 'sine'; // 濁りのない綺麗な芯
+            osc1.frequency.value = frequency;
+
+            // 2. 高次倍音（ピアノ特有のカンカンした金属感と輝きを足す）
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'triangle'; // 三角波で中音域の厚みを補正
+            osc2.frequency.value = frequency * 2; // 1オクターブ上
+
+            const osc3 = audioCtx.createOscillator();
+            const gain3 = audioCtx.createGain();
+            osc3.type = 'sawtooth'; // 鋸歯状波で高音のきらびやかさを追加
+            osc3.frequency.value = frequency * 3; // 1.5オクターブ上（第3倍音）
+
+            // --- フィルターで電子音っぽすぎる高音のトゲを削る ---
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(frequency * 4, now);
+            filter.frequency.exponentialRampToValueAtTime(frequency * 1.5, now + 0.8); // 減衰と共に音をこもらせる
+
+            // --- 音量エンベロープ（エンハンサー）：ピアノの打鍵を再現 ---
+            // 叩いた瞬間（0.005秒）に最大音量になり、その後滑らかに消えていく
+            gain1.gain.setValueAtTime(0, now);
+            gain1.gain.linearRampToValueAtTime(0.6, now + 0.005);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+            gain2.gain.setValueAtTime(0, now);
+            gain2.gain.linearRampToValueAtTime(0.2, now + 0.005);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5); // 高音は早めに消える
+
+            gain3.gain.setValueAtTime(0, now);
+            gain3.gain.linearRampToValueAtTime(0.05, now + 0.002); // 鍵盤が弦を叩く「アタック感」
+            gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.1); // 一瞬で消す
+
+            // 接続
+            osc1.connect(gain1); gain1.connect(filter);
+            osc2.connect(gain2); gain2.connect(filter);
+            osc3.connect(gain3); gain3.connect(filter);
+            
+            filter.connect(audioCtx.destination);
+
+            // 再生開始と停止
+            osc1.start(now); osc1.stop(now + 1.2);
+            osc2.start(now); osc2.stop(now + 0.5);
+            osc3.start(now); osc3.stop(now + 0.1);
         }
 
         function playHitSound() {
