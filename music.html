@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>曲選択 - リズムWebピアノ</title>
+    <style>
+        body { font-family: sans-serif; background: #1a1a1a; color: white; display: flex; flex-direction: column; align-items: center; padding-top: 50px; }
+        h1 { color: #00d2ff; }
+        .song-list { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; width: 300px; }
+        .song-btn {
+            padding: 15px; font-size: 18px; font-weight: bold; background: #333; color: white;
+            border: 2px solid #555; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+        }
+        .song-btn:hover { background: #00d2ff; color: #1a1a1a; border-color: #00d2ff; transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+
+    <h1>🎵 演奏する曲を選んでください</h1>
+
+    <div class="song-list">
+        <button class="song-btn" onclick="selectSong('twinkle')">⭐ きらきら星</button>
+        <button class="song-btn" onclick="selectSong('custom')">🎹 テスト用カスタム曲</button>
+    </div>
+
+    <script>
+        function selectSong(songId) {
+            // 例: index.html?song=twinkle というURLに移動する
+            window.location.href = `index.html?song=${songId}`;
+        }
+    </script>
+</body>
+</html>
