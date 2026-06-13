@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
     <title>演奏画面 - リズムWebピアノ</title>
     <style>
-        /* 画面全体をぴったり100%にフィットさせ、スクロールを完全排除 */
         html, body { position: fixed; width: 100%; height: 100%; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
         body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #1a1a1a; color: white; margin: 0; }
         
-        /* スコア・ゲージエリア（高さを固定して安定化） */
         .header-area { height: 75px; margin: 5px 0 0 0; display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 10; width: 100%; max-width: 456px; box-sizing: border-box; }
         .nav-row { display: flex; width: 100%; justify-content: space-between; align-items: center; padding: 0 10px; box-sizing: border-box; }
         .menu-btn { padding: 5px 10px; background: #555; color: white; border: none; border-radius: 5px; text-decoration: none; font-size: 12px; font-weight: bold; }
@@ -20,41 +18,35 @@
         .progress-container { width: calc(100% - 20px); height: 5px; background: #333; border-radius: 3px; overflow: hidden; }
         .progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #00d2ff, #0066ff); transition: width 0.1s linear; }
 
-        /* ゲーム画面（余った縦幅をすべて自動で使い切る：flex: 1） */
         .game-view { position: relative; width: 100%; max-width: 456px; flex: 1; background: #222; border: 3px solid #444; border-bottom: none; overflow: hidden; box-sizing: border-box; }
 
-        /* レーンガイド線 */
         .lane-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; pointer-events: none; z-index: 1; }
         .line { flex: 1; border-right: 1px dashed rgba(255, 255, 255, 0.12); height: 100%; box-sizing: border-box; }
         .line:last-child { border-right: none; }
 
-        /* ノーツデザイン */
+        /* 【修正】スマホ画面でもノーツが短くなりすぎないよう縦幅(height)をしっかり確保 */
         .note-block {
-            position: absolute; height: 18px;
+            position: absolute; height: 35px; /* 18pxから35pxに拡大し、視認性を向上 */
             background: linear-gradient(#00d2ff, #0066ff);
-            border-radius: 4px; box-shadow: 0 0 8px #00d2ff;
-            animation: fall 2.5s linear forwards; z-index: 2;
+            border-radius: 6px; box-shadow: 0 0 10px #00d2ff;
+            animation: fall 2.2s linear forwards; z-index: 2; /* 速度を少しだけ調整して快適に */
             box-sizing: border-box;
         }
         .note-block.black-note {
             background: linear-gradient(#ff00d2, #aa00ff);
-            box-shadow: 0 0 8px #ff00d2;
+            box-shadow: 0 0 10px #ff00d2;
         }
 
-        /* 判定テキスト表示位置 */
         .judgment-display { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 26px; font-weight: bold; text-shadow: 0 0 10px black; pointer-events: none; z-index: 5; text-align: center; }
         .judgment-text.perfect { color: #ffea00; }
         .judgment-text.great { color: #00ff66; }
         .judgment-text.miss { color: #ff0055; }
         .combo-text { font-size: 15px; color: white; margin-top: 2px; }
 
-        /* 判定ライン（底面から15px上に固定） */
-        .judgment-line { position: absolute; bottom: 15px; width: 100%; height: 4px; background: #ff0055; box-shadow: 0 0 10px #ff0055; z-index: 3; }
+        .judgment-line { position: absolute; bottom: 20px; width: 100%; height: 4px; background: #ff0055; box-shadow: 0 0 10px #ff0055; z-index: 3; }
 
-        /* ピアノ鍵盤エリア（高さを130pxから85pxにコンパクト化！） */
         .piano-container { display: flex; background: #333; width: 100%; max-width: 456px; height: 85px; position: relative; z-index: 4; box-sizing: border-box; }
         
-        /* 白鍵 */
         .white-key {
             flex: 1; height: 100%; background: white; color: #333; border: 1px solid #333; border-top: none; border-radius: 0 0 4px 4px;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
@@ -63,7 +55,6 @@
         }
         .white-key.active { background: #00d2ff; color: white; box-shadow: none; transform: scaleY(0.96); transform-origin: top; }
         
-        /* 黒鍵（白鍵の縮小に合わせてこちらもバランスを最適化） */
         .black-key {
             position: absolute; width: calc(12.5% * 0.65); height: 58%; background: #111; color: white;
             border-radius: 0 0 3px 3px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
@@ -72,7 +63,6 @@
         }
         .black-key.active { background: #ff00d2; color: white; box-shadow: none; transform: scaleY(0.96); transform-origin: top; }
 
-        /* 黒鍵の配置位置 */
         #key-W { left: calc(12.5% * 1 - (12.5% * 0.65) / 2); }
         #key-E { left: calc(12.5% * 2 - (12.5% * 0.65) / 2); }
         #key-T { left: calc(12.5% * 4 - (12.5% * 0.65) / 2); }
@@ -83,8 +73,8 @@
         .black-key .key-hint { color: #aaa; }
 
         @keyframes fall {
-            0% { top: -25px; }
-            100% { top: calc(100% - 15px); } /* 判定線の位置変更に合わせて終点を調整 */
+            0% { top: -40px; }
+            100% { top: calc(100% - 20px); }
         }
     </style>
 </head>
@@ -148,32 +138,50 @@
         let activeNotes = [];
         let progressInterval = null;
 
+        // 【大修正】すべての楽曲データをフル演奏版へ完全拡張！
         const songs = {
             free: { title: "自由演奏（フリーモード）", data: [] },
             twinkle: {
-                title: "⭐ きらきら星",
+                title: "⭐ きらきら星 (Full)",
                 data: [
-                    ['key-A', 0.0], ['key-A', 0.7], ['key-G', 1.4], ['key-G', 2.1], ['key-H', 2.8], ['key-H', 3.5], ['key-G', 4.2],
-                    ['key-F', 5.6], ['key-F', 6.3], ['key-D', 7.0], ['key-D', 7.7], ['key-S', 8.4], ['key-S', 9.1], ['key-A', 9.8]
+                    // 1番：きらきら光る
+                    ['key-A', 0.0], ['key-A', 0.6], ['key-G', 1.2], ['key-G', 1.8], ['key-H', 2.4], ['key-H', 3.0], ['key-G', 3.6],
+                    ['key-F', 4.8], ['key-F', 5.4], ['key-D', 6.0], ['key-D', 6.6], ['key-S', 7.2], ['key-S', 7.8], ['key-A', 8.4],
+                    // 2番：お空の星よ
+                    ['key-G', 9.6], ['key-G', 10.2], ['key-F', 10.8], ['key-F', 11.4], ['key-D', 12.0], ['key-D', 12.6], ['key-S', 13.2],
+                    ['key-G', 14.4], ['key-G', 15.0], ['key-F', 15.6], ['key-F', 16.2], ['key-D', 16.8], ['key-D', 17.4], ['key-S', 18.0],
+                    // 3番：きらきら光る（リフレイン）
+                    ['key-A', 19.2], ['key-A', 19.8], ['key-G', 20.4], ['key-G', 21.0], ['key-H', 21.6], ['key-H', 22.2], ['key-G', 22.8],
+                    ['key-F', 24.0], ['key-F', 24.6], ['key-D', 25.2], ['key-D', 25.8], ['key-S', 26.4], ['key-S', 27.0], ['key-A', 27.6]
                 ]
             },
             garibu: {
-                title: "🏝️ ガリブの島",
+                title: "🏝️ ガリブの島 (陽気なフル版)",
                 data: [
-                    ['key-D', 0.0], ['key-F', 0.5], ['key-G', 1.0], ['key-H', 1.5],
-                    ['key-H', 2.0], ['key-G', 2.5], ['key-F', 3.0], ['key-D', 3.5],
-                    ['key-T', 19.0], ['key-G', 19.5], ['key-H', 20.0], ['key-J', 20.5]
+                    // Aメロ：軽快なステップ
+                    ['key-D', 0.0], ['key-F', 0.4], ['key-G', 0.8], ['key-H', 1.2], ['key-H', 1.6], ['key-G', 2.0], ['key-F', 2.4], ['key-D', 2.8],
+                    ['key-S', 3.2], ['key-D', 3.6], ['key-F', 4.0], ['key-G', 4.4], ['key-F', 4.8], ['key-D', 5.2], ['key-S', 5.6], ['key-A', 6.0],
+                    // Bメロ：黒鍵を交えたラテンのリズム
+                    ['key-D', 7.0], ['key-F', 7.4], ['key-T', 7.8], ['key-G', 8.2], ['key-H', 8.6], ['key-Y', 9.0], ['key-H', 9.4], ['key-G', 9.8],
+                    ['key-F', 10.2], ['key-T', 10.6], ['key-F', 11.0], ['key-D', 11.4], ['key-S', 11.8], ['key-A', 12.2], ['key-D', 12.6],
+                    // サビ：島の大祭り（13秒から一気に盛り上がる）
+                    ['key-G', 14.0], ['key-H', 14.3], ['key-J', 14.6], ['key-K', 14.9], ['key-K', 15.3], ['key-J', 15.6], ['key-H', 15.9], ['key-G', 16.2],
+                    ['key-F', 16.6], ['key-G', 16.9], ['key-H', 17.2], ['key-J', 17.5], ['key-H', 17.9], ['key-G', 18.2], ['key-F', 18.5], ['key-D', 18.8],
+                    // フィナーレ
+                    ['key-D', 19.6], ['key-G', 20.0], ['key-H', 20.4], ['key-K', 20.8], ['key-K', 21.6]
                 ]
             },
             rushe: {
                 title: "🎹 Rush E (本家再現ドラマチック版)",
                 data: [
+                    // === 前半：簡単Vパート ===
                     ['key-A', 0.0], ['key-A', 0.5], ['key-A', 1.0], ['key-A', 1.5],
                     ['key-A', 2.0], ['key-D', 2.3], ['key-G', 2.6], ['key-A', 3.0],
                     ['key-A', 4.0], ['key-A', 4.5], ['key-A', 5.0], ['key-A', 5.5],
                     ['key-A', 6.0], ['key-F', 6.3], ['key-D', 6.6], ['key-A', 7.0],
                     ['key-A', 8.0], ['key-S', 8.3], ['key-D', 8.6], ['key-F', 8.9],
                     ['key-G', 9.2], ['key-H', 9.5], ['key-J', 9.8], ['key-K', 10.1],
+                    // === 後半：難関パート（縦連打地獄） ===
                     ['key-A', 11.0], ['key-A', 11.15], ['key-A', 11.3], ['key-A', 11.45],
                     ['key-A', 11.6], ['key-A', 11.75], ['key-A', 11.9], ['key-A', 12.05],
                     ['key-A', 12.3], ['key-S', 12.5], ['key-A', 12.7], ['key-D', 12.9],
@@ -227,14 +235,14 @@
                     const viewRect = gameView.getBoundingClientRect();
                     
                     const noteBottomInsideView = rect.bottom - viewRect.top;
-                    const targetLinePos = viewRect.height - 15; // 判定線位置（15px）に同期
+                    const targetLinePos = viewRect.height - 20; 
                     const diff = Math.abs(noteBottomInsideView - targetLinePos);
 
-                    if (diff <= 45) { 
+                    if (diff <= 50) { 
                         playHitSound(); 
                         playTone(parseFloat(targetKey.getAttribute('data-note'))); 
                         
-                        if (diff <= 15) {
+                        if (diff <= 18) {
                             score += 100; combo++; showJudgmentEffect('PERFECT');
                         } else {
                             score += 50; combo++; showJudgmentEffect('GREAT');
